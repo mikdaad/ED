@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLM Engineering — Interactive Learning Hub</title>
+<style>
+:root{
+  --bg:#070b16; --panel:#0e1526; --panel2:#141d36; --ink:#e8edf7; --mut:#93a0ba;
+  --line:rgba(255,255,255,.09); --line2:rgba(255,255,255,.16);
+  --indigo:#818cf8; --cyan:#22d3ee; --violet:#c084fc; --green:#34d399;
+  --amber:#fbbf24; --rose:#fb7185; --blue:#60a5fa; --orange:#fb923c;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:var(--bg); color:var(--ink); line-height:1.6; overflow-x:hidden;
+}
+body::before{content:"";position:fixed;inset:0;z-index:-1;
+  background:radial-gradient(700px 500px at 85% -5%,rgba(129,140,248,.14),transparent 60%),
+             radial-gradient(600px 450px at -10% 30%,rgba(34,211,238,.09),transparent 60%),
+             radial-gradient(700px 600px at 60% 110%,rgba(192,132,252,.10),transparent 60%);}
+#scrollbar{position:fixed;top:0;left:0;height:3px;width:0;z-index:99;
+  background:linear-gradient(90deg,var(--cyan),var(--indigo),var(--violet));transition:width .1s}
+/* ---------- layout ---------- */
+.shell{display:flex}
+nav{position:fixed;top:0;left:0;bottom:0;width:240px;padding:18px 14px;overflow-y:auto;z-index:50;
+  background:rgba(10,15,30,.85);backdrop-filter:blur(10px);border-right:1px solid var(--line)}
+nav .logo{font-weight:800;font-size:15px;letter-spacing:.3px;margin-bottom:4px}
+nav .logo span{background:linear-gradient(90deg,var(--cyan),var(--violet));-webkit-background-clip:text;background-clip:text;color:transparent}
+nav .sub{font-size:11px;color:var(--mut);margin-bottom:14px}
+nav a{display:flex;align-items:center;gap:8px;padding:6px 9px;margin:1px 0;border-radius:8px;
+  color:var(--mut);text-decoration:none;font-size:12.5px;transition:all .18s;border:1px solid transparent}
+nav a:hover{color:var(--ink);background:rgba(255,255,255,.05)}
+nav a.active{color:var(--ink);background:rgba(129,140,248,.14);border-color:rgba(129,140,248,.35)}
+nav a .dot{width:7px;height:7px;border-radius:50%;background:var(--line2);flex-shrink:0;transition:all .3s}
+nav a.active .dot{background:var(--indigo);box-shadow:0 0 8px var(--indigo)}
+#explore{margin-top:12px;padding:9px;border:1px solid var(--line);border-radius:10px;font-size:11px;color:var(--mut)}
+#exploreBar{height:4px;background:rgba(255,255,255,.08);border-radius:3px;margin-top:6px;overflow:hidden}
+#exploreFill{height:100%;width:0;background:linear-gradient(90deg,var(--green),var(--cyan));transition:width .6s;border-radius:3px}
+main{margin-left:240px;flex:1;min-width:0}
+section{max-width:1060px;margin:0 auto;padding:64px 34px 20px}
+@media(max-width:960px){
+  nav{position:sticky;width:100%;height:auto;bottom:auto;display:flex;flex-wrap:wrap;align-items:center}
+  nav .sub{display:none} nav a{padding:5px 8px} #explore{display:none}
+  main{margin-left:0}
+}
+/* ---------- typography & shared ---------- */
+h1{font-size:34px;line-height:1.2;letter-spacing:-.5px}
+h2{font-size:26px;letter-spacing:-.3px;margin-bottom:6px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+h3{font-size:16px;margin:18px 0 8px}
+p{color:#c3cde0;margin-bottom:10px}
+.lead{color:var(--mut);font-size:15px}
+.badge{font-size:10.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;padding:4px 10px;border-radius:99px;border:1px solid}
+.b-w1{color:var(--cyan);border-color:rgba(34,211,238,.4);background:rgba(34,211,238,.08)}
+.b-w2{color:var(--violet);border-color:rgba(192,132,252,.4);background:rgba(192,132,252,.08)}
+.b-w3{color:var(--green);border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.08)}
+.b-w4{color:var(--amber);border-color:rgba(251,191,36,.4);background:rgba(251,191,36,.08)}
+.b-w5{color:var(--rose);border-color:rgba(251,113,133,.4);background:rgba(251,113,133,.08)}
+.b-w6{color:var(--orange);border-color:rgba(251,146,60,.4);background:rgba(251,146,60,.08)}
+.b-lab{color:var(--indigo);border-color:rgba(129,140,248,.45);background:rgba(129,140,248,.1)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.btn{cursor:pointer;border:none;border-radius:10px;padding:9px 16px;font-size:13px;font-weight:600;
+  color:#0b1020;background:linear-gradient(135deg,var(--cyan),var(--indigo));transition:all .18s;font-family:inherit}
+.btn:hover{transform:translateY(-1px);filter:brightness(1.12)}
+.btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line2)}
+.btn.ghost:hover{border-color:var(--indigo);color:var(--indigo)}
+.btn.small{padding:5px 11px;font-size:12px;border-radius:8px}
+.btn.danger{background:linear-gradient(135deg,var(--rose),#f43f5e);color:#fff}
+.row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+input[type=text],textarea{background:#0a1122;border:1px solid var(--line2);border-radius:10px;color:var(--ink);
+  padding:9px 12px;font-size:13px;font-family:inherit;width:100%}
+input[type=text]:focus,textarea:focus{outline:none;border-color:var(--indigo)}
+input[type=range]{accent-color:var(--indigo)}
+code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+pre{background:#0a1122;border:1px solid var(--line);border-radius:12px;padding:14px;font-size:12px;
+  overflow-x:auto;line-height:1.55;color:#c9d4ea;margin:10px 0}
+pre .k{color:var(--violet)} pre .s{color:var(--green)} pre .c{color:#5d6b8a;font-style:italic}
+pre .f{color:var(--cyan)} pre .n{color:var(--amber)}
+.note{font-size:12.5px;color:var(--mut);border-left:3px solid var(--indigo);padding:8px 12px;
+  background:rgba(129,140,248,.06);border-radius:0 10px 10px 0;margin:10px 0}
+.note.green{border-left-color:var(--green);background:rgba(52,211,153,.06)}
+.note.rose{border-left-color:var(--rose);background:rgba(251,113,133,.06)}
+.note.amber{border-left-color:var(--amber);background:rgba(251,191,36,.06)}
+.tag{display:inline-block;font-size:10px;padding:2px 8px;border-radius:99px;background:rgba(255,255,255,.06);
+  border:1px solid var(--line);color:var(--mut);margin-right:4px}
+.fadeup{opacity:0;transform:translateY(18px);transition:opacity .6s,transform .6s}
+.fadeup.show{opacity:1;transform:none}
+@keyframes pulse{0%,100%{opacity:.55}50%{opacity:1}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+@keyframes ring{0%{transform:scale(.4);opacity:.9}100%{transform:scale(2.6);opacity:0}}
+@keyframes buzz{0%,100%{transform:translateX(0)}20%{transform:translateX(-4px)}40%{transform:translateX(4px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+@keyframes flash{0%,100%{box-shadow:none}50%{box-shadow:0 0 0 3px var(--amber),0 0 22px rgba(251,191,36,.55)}}
+.flash{animation:flash .8s ease-in-out 2}
+/* ---------- hero ---------- */
+#hero{min-height:92vh;display:flex;flex-direction:column;justify-content:center;position:relative;padding-top:40px}
+#hero .orb{position:absolute;border-radius:50%;filter:blur(70px);opacity:.5;animation:floaty 9s ease-in-out infinite;pointer-events:none}
+#hero .o1{width:340px;height:340px;background:rgba(99,102,241,.35);top:8%;right:4%}
+#hero .o2{width:260px;height:260px;background:rgba(34,211,238,.25);bottom:12%;left:2%;animation-delay:-4s}
+#hero h1{font-size:clamp(34px,5.4vw,58px);margin:14px 0;max-width:800px}
+#hero h1 .grad{background:linear-gradient(90deg,var(--cyan),var(--indigo),var(--violet));-webkit-background-clip:text;background-clip:text;color:transparent}
+#hero .stats{display:flex;gap:12px;flex-wrap:wrap;margin:22px 0}
+#hero .stat{border:1px solid var(--line);background:rgba(255,255,255,.03);border-radius:14px;padding:12px 18px;min-width:120px}
+#hero .stat b{font-size:22px;display:block;background:linear-gradient(90deg,var(--cyan),var(--violet));-webkit-background-clip:text;background-clip:text;color:transparent}
+#hero .stat span{font-size:11.5px;color:var(--mut)}
+/* ---------- flip cards (ideas & glossary) ---------- */
+.flip{perspective:1100px;height:190px;cursor:pointer}
+.flip-in{position:relative;width:100%;height:100%;transition:transform .65s cubic-bezier(.4,.1,.2,1);transform-style:preserve-3d}
+.flip.flipped .flip-in{transform:rotateY(180deg)}
+.flip-f,.flip-b{position:absolute;inset:0;backface-visibility:hidden;border-radius:14px;padding:16px;
+  border:1px solid var(--line);display:flex;flex-direction:column;justify-content:center}
+.flip-f{background:linear-gradient(145deg,var(--panel2),var(--panel))}
+.flip-f .num{font-size:11px;color:var(--indigo);font-weight:700;letter-spacing:1px;margin-bottom:6px}
+.flip-f .t{font-size:15.5px;font-weight:700}
+.flip-f .hint{font-size:11px;color:var(--mut);margin-top:10px}
+.flip-b{background:linear-gradient(145deg,#182342,#101a33);transform:rotateY(180deg);font-size:12.5px;color:#c9d4ea;overflow:auto}
+.flip-b b{color:var(--cyan)}
+/* ---------- messages lab ---------- */
+.msg{border-radius:12px;padding:9px 13px;margin:6px 0;font-size:12.5px;border:1px solid;max-width:92%;
+  animation:fadeUp .35s ease both;position:relative;word-break:break-word}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.msg .r{font-size:9.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;opacity:.85;display:block;margin-bottom:2px}
+.m-system{background:rgba(251,191,36,.09);border-color:rgba(251,191,36,.35);margin-right:auto}
+.m-user{background:rgba(34,211,238,.09);border-color:rgba(34,211,238,.35);margin-left:auto}
+.m-assistant{background:rgba(129,140,248,.1);border-color:rgba(129,140,248,.4);margin-right:auto}
+.m-tool{background:rgba(52,211,153,.09);border-color:rgba(52,211,153,.35);margin-right:auto}
+.m-sys{color:var(--amber)} .m-use{color:var(--cyan)} .m-ass{color:var(--indigo)} .m-too{color:var(--green)}
+/* ---------- tool sim ---------- */
+.dots{display:flex;gap:7px;margin-bottom:12px}
+.dots i{width:9px;height:9px;border-radius:50%;background:var(--line2);transition:all .3s}
+.dots i.on{background:var(--indigo);box-shadow:0 0 8px var(--indigo);transform:scale(1.25)}
+.dots i.done{background:var(--green)}
+.wire{background:#0a1122;border:1px solid var(--line);border-radius:12px;padding:12px;font-size:11.5px;
+  font-family:ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;color:#aab8d6;line-height:1.6;min-height:130px}
+.wire .hl{color:#0b1020;background:var(--green);border-radius:4px;padding:0 3px;font-weight:700}
+.wire .hlr{color:#0b1020;background:var(--amber);border-radius:4px;padding:0 3px;font-weight:700}
+/* ---------- debate ---------- */
+.debate{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:700px){.debate{grid-template-columns:1fr}}
+.db-col{border:1px solid var(--line);border-radius:14px;padding:14px;min-height:300px;background:rgba(255,255,255,.02)}
+.db-col h4{font-size:13px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.db-bubble{border-radius:11px;padding:7px 11px;font-size:12px;margin:6px 0;animation:fadeUp .4s both}
+.db-gpt{background:rgba(129,140,248,.13);border-left:3px solid var(--indigo)}
+.db-claude{background:rgba(251,113,133,.11);border-left:3px solid var(--rose)}
+.mem{display:flex;flex-wrap:wrap;gap:4px;margin-top:10px}
+.mem i{font-style:normal;font-size:9.5px;padding:2px 7px;border-radius:99px;background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--mut)}
+/* ---------- pipeline ---------- */
+.pipe{display:flex;align-items:center;gap:0;margin:26px 0 14px;position:relative;overflow-x:auto;padding:10px 0}
+.station{flex:1;min-width:110px;text-align:center;position:relative;cursor:pointer;padding:10px 4px;border-radius:12px;transition:all .25s}
+.station:hover{background:rgba(255,255,255,.04)}
+.station .node{width:52px;height:52px;margin:0 auto 8px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:21px;background:var(--panel2);border:2px solid var(--line2);transition:all .3s;position:relative;z-index:2}
+.station.active .node{border-color:var(--cyan);box-shadow:0 0 18px rgba(34,211,238,.5);transform:scale(1.12)}
+.station .lab{font-size:11px;font-weight:700}
+.station .snum{font-size:9px;color:var(--mut)}
+.pipe-line{position:absolute;top:36px;left:8%;right:8%;height:2px;background:var(--line2);z-index:1}
+#pipeBlob{position:absolute;top:29px;left:6%;width:16px;height:16px;border-radius:50%;z-index:3;
+  background:radial-gradient(circle at 35% 35%,#a5f3fc,var(--cyan));box-shadow:0 0 14px var(--cyan);
+  transition:left 1s cubic-bezier(.45,0,.55,1);opacity:0}
+/* ---------- tokens ---------- */
+.tokchip{display:inline-block;font-size:12px;padding:3px 7px;margin:3px;border-radius:7px;font-family:ui-monospace,Menlo,monospace;animation:fadeUp .3s both}
+.meter{height:14px;border-radius:8px;background:rgba(255,255,255,.07);overflow:hidden;margin:8px 0 4px}
+.meter>div{height:100%;border-radius:8px;transition:width .9s cubic-bezier(.4,0,.2,1)}
+/* ---------- rag ---------- */
+#ragWrap{display:grid;grid-template-columns:1.5fr 1fr;gap:14px}
+@media(max-width:820px){#ragWrap{grid-template-columns:1fr}}
+#ragCanvas{background:#0a1122;border:1px solid var(--line);border-radius:14px;width:100%;display:block}
+.ctxline{font-size:11.5px;padding:7px 10px;border:1px solid var(--line);border-radius:9px;margin:6px 0;
+  background:rgba(255,255,255,.03);color:#c3cde0;animation:fadeUp .4s both}
+.ctxline b{color:var(--cyan);font-size:10px;letter-spacing:.5px}
+/* ---------- training ---------- */
+.hb{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:rgba(255,255,255,.02);transition:all .3s;flex:1;min-width:120px}
+.hb .h{font-size:11.5px;font-weight:800;font-family:ui-monospace,Menlo,monospace}
+.hb .d{font-size:10.5px;color:var(--mut)}
+.hb.on{border-color:var(--green);background:rgba(52,211,153,.1);box-shadow:0 0 14px rgba(52,211,153,.25);transform:translateY(-3px)}
+/* ---------- agent ---------- */
+#agWrap{display:grid;grid-template-columns:250px 1fr 280px;gap:14px}
+@media(max-width:960px){#agWrap{grid-template-columns:1fr}}
+#phone{width:210px;height:390px;border-radius:30px;border:3px solid #2a3550;background:#0a0f1e;margin:0 auto;
+  position:relative;padding:24px 12px;transition:all .3s}
+#phone.buzz{animation:buzz .5s ease 3;border-color:var(--rose)}
+#phone .cam{width:60px;height:6px;background:#1c2742;border-radius:4px;margin:0 auto 14px}
+#phone .scr{font-size:10px;color:var(--mut);text-align:center}
+#phoneBanner{position:absolute;top:44px;left:8px;right:8px;background:rgba(18,26,48,.97);border:1px solid var(--rose);
+  border-radius:12px;padding:9px 11px;font-size:10.5px;transform:translateY(-140%);transition:transform .5s cubic-bezier(.2,.8,.3,1.2);box-shadow:0 8px 30px rgba(0,0,0,.5)}
+#phoneBanner.show{transform:none}
+#phoneBanner b{color:var(--rose);font-size:9px;letter-spacing:1px}
+.agrow{display:grid;grid-template-columns:34px 1fr auto;gap:8px;padding:8px 10px;border:1px solid transparent;
+  border-radius:10px;font-size:12px;align-items:center;transition:all .3s;color:var(--mut)}
+.agrow.cur{border-color:var(--indigo);background:rgba(129,140,248,.1);color:var(--ink)}
+.agrow.done{color:#7e8bad}
+.agrow .n{width:24px;height:24px;border-radius:50%;border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.agrow.done .n{background:var(--green);color:#0b1020;border-color:var(--green)}
+.agrow .tc{font-family:ui-monospace,Menlo,monospace;font-size:10.5px}
+.led{display:inline-flex;align-items:center;font-size:9.5px;padding:3px 8px;border-radius:7px;margin:2px;font-family:ui-monospace,Menlo,monospace;border:1px solid}
+.led.a{background:rgba(129,140,248,.12);border-color:rgba(129,140,248,.4);color:var(--indigo)}
+.led.t{background:rgba(52,211,153,.1);border-color:rgba(52,211,153,.4);color:var(--green)}
+#agLog{background:#0a1122;border:1px solid var(--line);border-radius:12px;padding:11px;height:300px;overflow-y:auto;font-family:ui-monospace,Menlo,monospace;font-size:10.5px;line-height:1.75}
+#agLog div{animation:fadeUp .3s both}
+/* ---------- quiz ---------- */
+.opt{display:block;width:100%;text-align:left;background:rgba(255,255,255,.03);border:1px solid var(--line);
+  border-radius:11px;padding:11px 14px;margin:7px 0;font-size:13px;color:var(--ink);cursor:pointer;transition:all .18s;font-family:inherit}
+.opt:hover:not(:disabled){border-color:var(--indigo);background:rgba(129,140,248,.07)}
+.opt.right{border-color:var(--green);background:rgba(52,211,153,.13)}
+.opt.wrong{border-color:var(--rose);background:rgba(251,113,133,.11)}
+.opt:disabled{cursor:default}
+/* ---------- roadmap ---------- */
+.tl{position:relative;padding-left:34px}
+.tl::before{content:"";position:absolute;left:11px;top:6px;bottom:6px;width:2px;background:linear-gradient(180deg,var(--cyan),var(--indigo),var(--violet))}
+.tl-item{position:relative;margin-bottom:16px;border:1px solid var(--line);border-radius:13px;padding:13px 16px;background:var(--panel);transition:all .3s}
+.tl-item::before{content:"";position:absolute;left:-29px;top:18px;width:12px;height:12px;border-radius:50%;
+  background:var(--panel2);border:2px solid var(--indigo);transition:all .4s}
+.tl-item.show::before{background:var(--indigo);box-shadow:0 0 10px var(--indigo)}
+.tl-item b{font-size:13.5px}
+.tl-item .req{font-size:11px;color:var(--mut);margin-top:3px}
+footer{max-width:1060px;margin:30px auto;padding:30px 34px 60px;color:var(--mut);font-size:12.5px;border-top:1px solid var(--line)}
+kbd{font-family:ui-monospace,Menlo,monospace;font-size:10.5px;background:rgba(255,255,255,.07);border:1px solid var(--line2);border-bottom-width:2px;border-radius:6px;padding:1px 6px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--mut);margin:8px 0}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+</style>
+</head>
+<body>
+<div id="scrollbar"></div>
+<div class="shell">
+
+<nav id="topnav">
+  <div class="logo">LLM<span>·</span>Engineering</div>
+  <div class="sub">Interactive Learning Hub</div>
+  <a href="#hero" class="active"><span class="dot"></span>Home</a>
+  <a href="#ideas"><span class="dot"></span>0 · Ten Big Ideas</a>
+  <a href="#messages"><span class="dot"></span>1 · Messages Lab</a>
+  <a href="#streaming"><span class="dot"></span>2 · Streaming Lab</a>
+  <a href="#tools"><span class="dot"></span>3 · Tool-Calling Lab</a>
+  <a href="#debate"><span class="dot"></span>4 · Debate Simulator</a>
+  <a href="#pipeline"><span class="dot"></span>5 · Pipeline Factory</a>
+  <a href="#tokens"><span class="dot"></span>6 · Tokens &amp; Quantization</a>
+  <a href="#rag"><span class="dot"></span>7 · RAG Playground</a>
+  <a href="#training"><span class="dot"></span>8 · Training Heartbeat</a>
+  <a href="#agent"><span class="dot"></span>9 · Agent Theater</a>
+  <a href="#quiz"><span class="dot"></span>✓ · Quiz Yourself</a>
+  <a href="#glossary"><span class="dot"></span>📖 Glossary Cards</a>
+  <a href="#roadmap"><span class="dot"></span>🗺️ Course Roadmap</a>
+  <div id="explore">Explored <b id="exploreCount">0</b>/14 sections<div id="exploreBar"><div id="exploreFill"></div></div></div>
+</nav>
+
+<main>
+
+<!-- ================= HERO ================= -->
+<section id="hero">
+  <div class="orb o1"></div><div class="orb o2"></div>
+  <span class="badge b-lab">Interactive · Animated · Self-contained</span>
+  <h1>Learn how every LLM project <span class="grad">actually works</span> — by playing with it.</h1>
+  <p class="lead">Ten interactive labs built from the 8-week LLM Engineering course. Build a conversation, watch tools get called, embed a question into a vector map, train a network, and run an autonomous agent — right here, right now.</p>
+  <div class="stats">
+    <div class="stat"><b>10</b><span>interactive labs</span></div>
+    <div class="stat"><b>8</b><span>course weeks covered</span></div>
+    <div class="stat"><b>16</b><span>project walkthroughs</span></div>
+    <div class="stat"><b>16</b><span>quiz questions</span></div>
+    <div class="stat"><b>$29.90</b><span>champion score to beat</span></div>
+  </div>
+  <div class="row">
+    <button class="btn" onclick="document.getElementById('ideas').scrollIntoView({behavior:'smooth'})">Start learning ↓</button>
+    <span style="font-size:12px;color:var(--mut)">Deep-dive text guides: <kbd>WEEK*_GUIDE.md</kbd> · <kbd>MASTER_STEP_BY_STEP_GUIDE.md</kbd> · <kbd>AI_AGENT_BRIEF.md</kbd></span>
+  </div>
+</section>
+
+<!-- ================= IDEAS ================= -->
+<section id="ideas">
+  <h2><span class="badge b-lab">Start here</span> Ten ideas that unlock the entire course</h2>
+  <p class="lead">Click each card to flip it. Everything in the 9 labs below is built from these ten blocks.</p>
+  <div class="grid g3" style="margin-top:16px" id="ideaGrid"></div>
+</section>
+
+<!-- ================= MESSAGES ================= -->
+<section id="messages">
+  <h2><span class="badge b-w1">Week 1–2 · Lab 1</span> The Messages Lab</h2>
+  <p class="lead">The single most important structure in the course: a list of <code>{role, content}</code> dicts. Models are <b>stateless</b> — "memory" is just resending the whole list every call. Build one yourself:</p>
+  <pre><span class="c">// the smallest possible conversation</span>
+messages = [{<span class="n">"role"</span>: <span class="s">"user"</span>, <span class="n">"content"</span>: <span class="s">"Hello, GPT!"</span>}]
+response = openai.chat.completions.<span class="f">create</span>(model=<span class="s">"gpt-4.1-mini"</span>, messages=messages)
+reply = response.choices[<span class="n">0</span>].message.content   <span class="c">// always this exact chain!</span></pre>
+  <div class="card">
+    <div class="row" style="margin-bottom:8px">
+      <button class="btn small ghost roleBtn" data-role="system" style="border-color:rgba(251,191,36,.5)">+ system</button>
+      <button class="btn small ghost roleBtn" data-role="user" style="border-color:rgba(34,211,238,.5)">+ user</button>
+      <button class="btn small ghost roleBtn" data-role="assistant" style="border-color:rgba(129,140,248,.5)">+ assistant</button>
+      <button class="btn small ghost roleBtn" data-role="tool" style="border-color:rgba(52,211,153,.5)">+ tool</button>
+      <span style="flex:1"></span>
+      <button class="btn small" id="msgSend">Send to model 🚀</button>
+      <button class="btn small ghost" id="msgFlash">⚡ Show what gets resent</button>
+      <button class="btn small danger" id="msgClear">Clear</button>
+    </div>
+    <textarea id="msgInput" rows="2" placeholder="Type the message content, pick a role above, and it's appended…"></textarea>
+    <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:14px;margin-top:12px" class="msgGrid">
+      <div>
+        <div style="font-size:11px;color:var(--mut);letter-spacing:1px;font-weight:700;margin-bottom:4px">CONVERSATION</div>
+        <div id="msgStack" style="min-height:150px;max-height:300px;overflow-y:auto"></div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--mut);letter-spacing:1px;font-weight:700;margin-bottom:4px">WHAT LEAVES YOUR MACHINE (JSON)</div>
+        <div class="wire" id="msgJson" style="min-height:150px;max-height:300px;overflow:auto">[ ]</div>
+      </div>
+    </div>
+    <div id="msgReply" style="margin-top:10px"></div>
+    <div class="note" id="msgNote" style="display:none"></div>
+  </div>
+</section>
+
+<!-- ================= STREAMING ================= -->
+<section id="streaming">
+  <h2><span class="badge b-w2">Week 1–2 · Lab 2</span> The Streaming Lab</h2>
+  <p class="lead">With <code>stream=True</code> the reply arrives as many small <b>chunks</b> — each carrying a fragment in <code>.delta.content</code>. The Python trick: a <b>generator</b> that <code>yield</code>s the partial text, pauses, and resumes on the next chunk.</p>
+  <pre><span class="k">def</span> <span class="f">stream_reply</span>(messages):
+    stream = openai.chat.completions.create(model=MODEL, messages=messages, <span class="n">stream=True</span>)
+    result = <span class="s">""</span>
+    <span class="k">for</span> chunk <span class="k">in</span> stream:
+        result += chunk.choices[<span class="n">0</span>].<span class="n">delta</span>.content <span class="k">or</span> <span class="s">""</span>   <span class="c">// .delta, not .message!</span>
+        <span class="k">yield</span> result          <span class="c">// ← pause, hand partial text to the UI, resume later</span></pre>
+  <div class="card">
+    <div class="row" style="margin-bottom:10px">
+      <button class="btn" id="streamBtn">▶ Stream a reply</button>
+      <button class="btn ghost" id="streamCompare">Compare: no streaming</button>
+      <span style="flex:1"></span>
+      <label style="font-size:11.5px;color:var(--mut)">speed <input type="range" id="streamSpeed" min="1" max="10" value="6" style="vertical-align:middle;width:110px"></label>
+    </div>
+    <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:14px" class="msgGrid">
+      <div style="border:1px solid var(--line);border-radius:12px;padding:14px;min-height:150px;background:#0a1122">
+        <div id="streamOut" style="font-size:13.5px;line-height:1.7"><span id="streamCursor" style="display:none;color:var(--cyan);animation:blink 1s infinite">▊</span></div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--mut);letter-spacing:1px;font-weight:700;margin-bottom:6px">CHUNKS ARRIVING OVER THE NETWORK</div>
+        <div id="streamChunks" style="min-height:130px;max-height:220px;overflow-y:auto"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= TOOLS ================= -->
+<section id="tools">
+  <h2><span class="badge b-w2">Week 2 · Lab 3</span> The Tool-Calling Round Trip</h2>
+  <p class="lead">The model <b>cannot run code</b>. It can only write a "work order" in JSON — <b>your</b> Python executes it. Step through the exact 4-step round trip that powers every AI agent:</p>
+  <pre>tools = [{<span class="n">"type"</span>: <span class="s">"function"</span>, <span class="n">"function"</span>: {<span class="n">"name"</span>: <span class="s">"get_ticket_price"</span>, <span class="n">"description"</span>: <span class="s">"Get the price of a return ticket…"</span>,
+   <span class="n">"parameters"</span>: {…}}}]
+response = openai.chat.completions.create(model=MODEL, messages=messages, <span class="n">tools=tools</span>)
+<span class="k">while</span> response.choices[<span class="n">0</span>].finish_reason == <span class="s">"tool_calls"</span>:   <span class="c">// ← THE AGENT LOOP</span>
+    message = response.choices[<span class="n">0</span>].message
+    messages.append(message)                       <span class="c">// append the REQUEST (required!)</span>
+    args = json.<span class="f">loads</span>(message.tool_calls[<span class="n">0</span>].function.arguments)  <span class="c">// a JSON STRING, not a dict</span>
+    result = get_ticket_price(args[<span class="s">"destination_city"</span>])          <span class="c">// YOUR function, YOUR machine</span>
+    messages.append({<span class="n">"role"</span>: <span class="s">"tool"</span>, <span class="n">"content"</span>: result, <span class="n">"tool_call_id"</span>: message.tool_calls[<span class="n">0</span>].id})
+    response = openai.chat.completions.create(model=MODEL, messages=messages, tools=tools)</pre>
+  <div class="card">
+    <div class="dots" id="toolDots"><i></i><i></i><i></i><i></i><i></i></div>
+    <h3 id="toolTitle" style="margin-top:0">Press Next to begin →</h3>
+    <p id="toolDesc" style="font-size:13px;min-height:44px"></p>
+    <div style="display:grid;grid-template-columns:1fr 1.3fr;gap:14px" class="msgGrid">
+      <div>
+        <div style="font-size:11px;color:var(--mut);letter-spacing:1px;font-weight:700;margin-bottom:4px">MESSAGE LIST</div>
+        <div id="toolMsgs" style="min-height:170px"></div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--mut);letter-spacing:1px;font-weight:700;margin-bottom:4px">ON THE WIRE / IN THE RESPONSE</div>
+        <div class="wire" id="toolWire">// nothing yet</div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn ghost" id="toolPrev">← Back</button>
+      <button class="btn" id="toolNext">Next →</button>
+      <button class="btn ghost" id="toolReset">↺ Reset</button>
+      <span style="flex:1"></span>
+      <label style="font-size:11.5px;color:var(--mut)"><input type="checkbox" id="toolLoop"> agent mode: keep looping while tool_calls</label>
+    </div>
+    <div class="note green" id="toolLoopNote" style="display:none">🤖 <b>That <code>while</code> is the agent loop.</b> The model can now chain tools — ask for one, read the result, decide to ask for another — until it finally answers. Week 8's autonomous deal-hunter is exactly this loop with a to-do list.</div>
+  </div>
+</section>
+
+<!-- ================= DEBATE ================= -->
+<section id="debate">
+  <h2><span class="badge b-w2">Week 2 · Lab 4</span> The Debate Simulator</h2>
+  <p class="lead">Two chatbots argue with <b>no human anywhere</b>. The trick: when calling GPT, GPT's own lines play <code>assistant</code> and <b>Claude's lines are relabeled <code>user</code></b> — and vice versa. Roles are just labels your code assigns.</p>
+  <div class="card">
+    <div class="row" style="margin-bottom:12px">
+      <button class="btn" id="debateAuto">▶ Auto-debate</button>
+      <button class="btn ghost" id="debateStep">Next turn →</button>
+      <button class="btn ghost" id="debateReset">↺ Reset</button>
+      <span style="flex:1"></span>
+      <label style="font-size:11.5px;color:var(--mut)"><input type="checkbox" id="debateTrick"> reveal the perspective trick</label>
+    </div>
+    <div class="debate">
+      <div class="db-col" style="border-color:rgba(129,140,248,.35)">
+        <h4>🤖 GPT <span class="tag" style="color:var(--indigo)">system: "very argumentative…"</span></h4>
+        <div id="debateGpt"></div>
+        <div class="mem" id="gptMem"></div>
+      </div>
+      <div class="db-col" style="border-color:rgba(251,113,133,.35)">
+        <h4>🤖 Claude <span class="tag" style="color:var(--rose)">system: "very polite, courteous…"</span></h4>
+        <div id="debateClaude"></div>
+        <div class="mem" id="claudeMem"></div>
+      </div>
+    </div>
+    <div class="note amber" id="trickNote" style="display:none"></div>
+  </div>
+</section>
+
+<!-- ================= PIPELINE ================= -->
+<section id="pipeline">
+  <h2><span class="badge b-w3">Week 3 · Lab 5</span> The Pipeline Factory</h2>
+  <p class="lead">HuggingFace's <code>pipeline()</code> is a car wash: dirty text in, answer out — hiding a 6-step machine. Click the stations, then press Run to send a token through the tunnel:</p>
+  <pre>pipe = <span class="f">pipeline</span>(<span class="s">"sentiment-analysis"</span>, device=<span class="s">"cuda"</span>)   <span class="c">// 2 lines…</span>
+pipe(<span class="s">"I'm super excited about this."</span>)
+<span class="c">// → [{'label': 'POSITIVE', 'score': 0.9998}]   …6 steps inside</span></pre>
+  <div class="card">
+    <div class="pipe" id="pipeLine">
+      <div class="pipe-line"></div>
+      <div id="pipeBlob"></div>
+    </div>
+    <div class="note" id="pipeDesc" style="min-height:52px">Click any station above, or press Run ▶</div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn" id="pipeRun">▶ Run the pipeline</button>
+      <span style="flex:1"></span>
+      <span style="font-size:11.5px;color:var(--mut)">same tunnel, different brushes:</span>
+      <span class="tag">sentiment</span><span class="tag">NER</span><span class="tag">QA</span><span class="tag">summarization</span><span class="tag">translation</span><span class="tag">zero-shot</span><span class="tag">TTS</span><span class="tag">diffusion</span>
+    </div>
+  </div>
+</section>
+
+<!-- ================= TOKENS ================= -->
+<section id="tokens">
+  <h2><span class="badge b-w3">Week 3 · Lab 6</span> Tokens &amp; Quantization</h2>
+  <p class="lead">Models read <b>tokens</b> — ~4-character chunks mapped to numbers — and store their billions of learned numbers ("weights") as <b>16-bit floats</b>. Quantization shrinks each to fewer bits: smaller, faster, slightly blurrier.</p>
+  <div class="grid g2">
+    <div class="card">
+      <h3 style="margin-top:0">✂️ Fake tokenizer</h3>
+      <div class="row"><input type="text" id="tokInput" value="Attention lets every token look at every other token!"><button class="btn small" id="tokBtn">Tokenize</button></div>
+      <div id="tokOut" style="margin-top:12px;min-height:60px"></div>
+      <div id="tokCount" style="font-size:12px;color:var(--mut);margin-top:8px"></div>
+      <div class="note">Real tokenizers are model-specific vocabulary lookups (try <code>tokenizer.apply_chat_template()</code>) — but the idea is the same: text becomes numbers, cost &amp; length are counted in tokens.</div>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">🗜️ Quantize Llama-3.2-3B</h3>
+      <div class="row">
+        <button class="btn small ghost quantBtn" data-bits="16">16-bit</button>
+        <button class="btn small ghost quantBtn" data-bits="8">8-bit</button>
+        <button class="btn small quantBtn" data-bits="4">4-bit (the course default)</button>
+      </div>
+      <div style="margin-top:14px;font-size:12px;color:var(--mut)">Model size in GPU memory</div>
+      <div class="meter"><div id="quantBar" style="width:100%;background:linear-gradient(90deg,var(--rose),var(--orange))"></div></div>
+      <div id="quantSize" style="font-size:14px;font-weight:700">6.4 GB — won't fit a free T4 (16 GB) alongside training</div>
+      <div style="margin-top:10px;font-size:12px;color:var(--mut)">Quality retained</div>
+      <div class="meter"><div id="qualBar" style="width:100%;background:linear-gradient(90deg,var(--green),var(--cyan))"></div></div>
+      <div id="quantQual" style="font-size:13px">100% — full precision</div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= RAG ================= -->
+<section id="rag">
+  <h2><span class="badge b-w5">Week 5 · Lab 7</span> The RAG Playground</h2>
+  <p class="lead">RAG = open-book exam. Documents are <b>embedded</b> into a "meaning map" where similar texts sit close together. A question lands on the map, the nearest chunks are grabbed, pasted into the prompt, and the model answers <b>from them</b>. Fire a question:</p>
+  <div class="card">
+    <div class="row" style="margin-bottom:10px">
+      <button class="btn small ragPreset" data-q="Who is the CTO?">Who is the CTO?</button>
+      <button class="btn small ragPreset" data-q="What is the refund policy?">Refund policy?</button>
+      <button class="btn small ragPreset" data-q="How do I reset my password?">Password reset?</button>
+      <button class="btn small ragPreset" data-q="What database does billing use?">Billing database?</button>
+      <input type="text" id="ragQ" placeholder="…or type your own question" style="flex:1;min-width:160px">
+      <button class="btn" id="ragRun">Retrieve ▶</button>
+    </div>
+    <div id="ragWrap">
+      <div>
+        <canvas id="ragCanvas" width="640" height="360"></canvas>
+        <div class="legend">
+          <span><i style="background:#22d3ee"></i>employees</span>
+          <span><i style="background:#c084fc"></i>products</span>
+          <span><i style="background:#34d399"></i>contracts</span>
+          <span><i style="background:#fbbf24"></i>company</span>
+          <span><i style="background:#fb7185"></i>your question</span>
+        </div>
+        <div id="ragStatus" style="font-size:12px;color:var(--mut)">Ready. Embedding = placing your question on the meaning map.</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--mut);letter-spacing:1px;font-weight:700;margin-bottom:4px">RETRIEVED CONTEXT (top-k)</div>
+        <div id="ragContext" style="min-height:150px;max-height:240px;overflow-y:auto"><div class="ctxline" style="opacity:.5">— nothing retrieved yet —</div></div>
+        <div style="font-size:11px;color:var(--mut);letter-spacing:1px;font-weight:700;margin:10px 0 4px">ANSWER (from the context, not from memory)</div>
+        <div id="ragAnswer" style="font-size:13px;border:1px solid var(--line);border-radius:11px;padding:12px;background:#0a1122;min-height:70px"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= TRAINING ================= -->
+<section id="training">
+  <h2><span class="badge b-w6">Week 6–7 · Lab 8</span> The Training Heartbeat</h2>
+  <p class="lead">Every neural network that has ever been trained runs this 5-step drumbeat, millions of times. Watch the loss fall — then flip the overfitting switch and watch validation loss betray you:</p>
+  <pre><span class="k">for</span> epoch <span class="k">in</span> range(EPOCHS):
+    <span class="k">for</span> X_batch, y_batch <span class="k">in</span> loader:
+        optimizer.<span class="f">zero_grad</span>()          <span class="c">// 1 erase last round's notes</span>
+        outputs = model(X_batch)        <span class="c">// 2 FORWARD: guess</span>
+        loss = loss_fn(outputs, y)      <span class="c">// 3 SCORE: how wrong?</span>
+        loss.<span class="f">backward</span>()                 <span class="c">// 4 BACKWARD: blame every weight</span>
+        optimizer.<span class="f">step</span>()                <span class="c">// 5 NUDGE every weight downhill</span></pre>
+  <div class="card">
+    <div class="row" style="align-items:stretch;margin-bottom:14px" id="hbSteps"></div>
+    <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:14px" class="msgGrid">
+      <canvas id="hbCanvas" width="560" height="260" style="background:#0a1122;border:1px solid var(--line);border-radius:12px;width:100%"></canvas>
+      <div>
+        <div class="row" style="margin-bottom:10px">
+          <button class="btn" id="hbToggle">▶ Train</button>
+          <button class="btn ghost" id="hbReset">↺ Reset</button>
+        </div>
+        <div style="font-size:13px">Epoch <b id="hbEpoch" style="color:var(--cyan)">0</b> · batch <b id="hbBatch" style="color:var(--cyan)">0</b>/8</div>
+        <div style="font-size:12.5px;color:var(--mut);margin-top:6px">train loss: <b id="hbTrain" style="color:var(--green)">—</b> · val loss: <b id="hbVal" style="color:var(--amber)">—</b></div>
+        <label style="display:block;font-size:12.5px;color:var(--mut);margin:12px 0 4px">speed</label>
+        <input type="range" id="hbSpeed" min="1" max="10" value="5" style="width:100%">
+        <label style="display:flex;gap:8px;align-items:center;font-size:12.5px;color:var(--mut);margin-top:14px;cursor:pointer">
+          <input type="checkbox" id="hbOverfit"> 🚨 overfit: keep training past the sweet spot</label>
+        <div class="note rose" id="hbWarn" style="display:none;margin-top:10px">⚠️ <b>Overfitting!</b> Training loss still falls (memorizing the answers) but validation loss rises (failing on new data). Fix: fewer epochs / more data / dropout.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= AGENT ================= -->
+<section id="agent">
+  <h2><span class="badge b-w7" style="color:var(--blue);border-color:rgba(96,165,250,.4);background:rgba(96,165,250,.08)">Week 8 · Lab 9</span> The Agent Theater</h2>
+  <p class="lead">The course finale: an autonomous agent scans deal sites, prices each deal with a 3-expert ensemble (LLM + RAG, your fine-tuned model on a GPU, your neural network), and <b>texts your phone</b> when a bargain appears. One conversation, seven tool round-trips:</p>
+  <div class="card">
+    <div class="row" style="margin-bottom:12px">
+      <button class="btn" id="agRun">▶ Run the agent</button>
+      <button class="btn ghost" id="agStep">Step →</button>
+      <button class="btn ghost" id="agReset">↺ Reset</button>
+      <span style="flex:1"></span>
+      <label style="font-size:11.5px;color:var(--mut)">speed <input type="range" id="agSpeed" min="1" max="10" value="6" style="vertical-align:middle;width:100px"></label>
+      <span style="font-size:11.5px;color:var(--mut)">messages in context: <b id="agCount" style="color:var(--indigo)">2</b></span>
+    </div>
+    <div id="agWrap">
+      <div>
+        <div id="phone">
+          <div class="cam"></div>
+          <div class="scr">🔐 locked<br><br>Pushover notifications<br>armed &amp; waiting…</div>
+          <div id="phoneBanner"><b>🔔 DEAL ALERT</b><br><span id="phoneText"></span></div>
+        </div>
+      </div>
+      <div>
+        <div id="agRows" style="margin-bottom:10px"></div>
+        <div style="font-size:11px;color:var(--mut);letter-spacing:1px;font-weight:700;margin-bottom:4px">MESSAGE LEDGER (appended each iteration — resent in full every call)</div>
+        <div id="agLedger" style="min-height:60px;border:1px solid var(--line);border-radius:11px;padding:8px;background:#0a1122"></div>
+        <div class="note" id="agIterCard" style="margin-top:10px;min-height:64px">Press Run — the planner (GPT-5.1) holds a to-do list written in plain English and chooses tools by itself.</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--mut);letter-spacing:1px;font-weight:700;margin-bottom:4px">AGENT LOG (what YOUR code does)</div>
+        <div id="agLog"><div style="color:#5d6b8a">[Framework] waiting… press Run ▶</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= QUIZ ================= -->
+<section id="quiz">
+  <h2><span class="badge b-lab">Check yourself</span> Quiz — 16 questions</h2>
+  <p class="lead">Drawn from the checkpoint questions in every guide. Instant feedback with explanations.</p>
+  <div class="card" style="max-width:720px">
+    <div id="quizBox"></div>
+  </div>
+</section>
+
+<!-- ================= GLOSSARY ================= -->
+<section id="glossary">
+  <h2><span class="badge b-lab">Reference</span> Glossary flip cards</h2>
+  <p class="lead">Every term from the guides. Click to flip. Filter as you type.</p>
+  <input type="text" id="glossSearch" placeholder="Search terms… (e.g. LoRA, token, RAG)" style="max-width:380px;margin:10px 0 16px">
+  <div class="grid g3" id="glossGrid"></div>
+</section>
+
+<!-- ================= ROADMAP ================= -->
+<section id="roadmap">
+  <h2><span class="badge b-lab">Run order</span> The whole course, in order</h2>
+  <p class="lead">Weeks build on each other — Week 6's data feeds Week 7's training feeds Week 8's agents. This is the dependency-safe order:</p>
+  <div class="tl" id="timeline" style="margin-top:16px"></div>
+  <div class="note green" style="margin-top:18px">🏆 <b>Golden rules:</b> run notebooks top-to-bottom · re-run <code>load_dotenv(override=True)</code> after editing <code>.env</code> · evaluate before you celebrate · delete generated folders (<code>vector_db/</code>, caches) to force clean rebuilds.</div>
+</section>
+
+<footer>
+  <b>LLM Engineering — Interactive Learning Hub.</b> Built from the course guides in this repository:
+  <kbd>WEEK1_WEEK2_GUIDE.md</kbd> … <kbd>WEEK8_GUIDE.md</kbd> for concepts ·
+  <kbd>MASTER_STEP_BY_STEP_GUIDE.md</kbd> for full execution traces ·
+  <kbd>AI_AGENT_BRIEF.md</kbd> to brief a coding AI agent.<br><br>
+  All labs are simulated in-browser for learning — no API keys, no network calls, no cost. Real code patterns live in the guides. 🎓
+</footer>
+
+</main>
+</div>
+<style>@media(max-width:760px){.msgGrid{grid-template-columns:1fr !important}}</style>
+<script>
+"use strict";
+/* ============ helpers ============ */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+             set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+function esc(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+/* ============ nav / progress ============ */
+const sections=["hero","ideas","messages","streaming","tools","debate","pipeline","tokens","rag","training","agent","quiz","glossary","roadmap"];
+const visited=new Set(store.get("hub_visited",[]));
+function updExplore(){ $("#exploreCount").textContent=visited.size;
+  $("#exploreFill").style.width=(visited.size/sections.length*100)+"%"; store.set("hub_visited",[...visited]); }
+updExplore();
+const secEls=sections.map(id=>document.getElementById(id));
+const navLinks={}; $$("#topnav a").forEach(a=>navLinks[a.getAttribute("href").slice(1)]=a);
+const io=new IntersectionObserver(es=>{es.forEach(e=>{
+  if(e.isIntersecting){ visited.add(e.target.id); updExplore();
+    $$("#topnav a").forEach(a=>a.classList.remove("active"));
+    (navLinks[e.target.id]||{classList:{add(){}}}).classList.add("active"); }
+});},{rootMargin:"-35% 0px -55% 0px"});
+secEls.forEach(el=>io.observe(el));
+window.addEventListener("scroll",()=>{const h=document.documentElement;
+  $("#scrollbar").style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight)*100)+"%";},{passive:true});
+/* fade-in */
+const fio=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add("show");fio.unobserve(e.target)}}),{threshold:.2});
+$$(".fadeup").forEach(el=>fio.observe(el));
+
+/* ============ IDEAS flip cards ============ */
+const IDEAS=[
+ ["An LLM = text in, text out","No magic import. Calling GPT = sending an HTTPS request with text; a GPU on OpenAI's servers runs the model; JSON with text comes back. Everything else is deciding <b>what text to send</b>."],
+ ["API key = membership card","<b>sk-proj-…</b> proves you're allowed in AND bills your account. Lives only in <b>.env</b>, loaded with <code>load_dotenv(override=True)</code>. Never commit it. 🏨 like a hotel key card."],
+ ["The messages list","A list of <code>{role, content}</code> dicts: <b>system</b> (backstage rules), <b>user</b> (human), <b>assistant</b> (model's own past lines), <b>tool</b> (function results). Roles are labels YOUR code assigns."],
+ ["The memory illusion","Models are <b>stateless</b> — they remember nothing between calls. 'Remembering' = resending the WHOLE list with new lines appended, every single time. See Lab 1."],
+ ["Tokens","Models read ~4-character chunks called tokens, mapped to numbers. Cost, speed limits and context windows are all measured in tokens. Try Lab 6."],
+ ["Rent vs own","<b>API models</b> (GPT, Claude…): someone else's GPU, pay per token. <b>Local models</b> (Llama…): you download the weights, run them yourself — usually <b>quantized</b> to 4-bit to fit."],
+ ["JSON is the paperwork","Structured text like <code>{\"city\":\"Tokyo\"}</code>. Requests, responses, tool descriptions, batch files, training data — all JSON. <code>json.loads</code> turns JSON text into a Python dict."],
+ ["Notebooks run top-to-bottom","Variables stay alive between cells. The #1 bug: running cell 5 without 1–4 → NameError. Fix: <b>Restart &amp; Run All</b>."],
+ ["Evaluate before you celebrate","Build → test against a fixed set with known answers → score → compare. The course leaderboard (106 → 29.90 avg $ error) only means something because everything was measured identically."],
+ ["The universal pattern","Every project: <b>CONFIGURE → GATHER → PREPARE → CALL → LOOP → PRESENT</b>. Find the six in new code and you can read any LLM project."]];
+$("#ideaGrid").innerHTML=IDEAS.map((it,i)=>`
+  <div class="flip"><div class="flip-in">
+    <div class="flip-f"><div class="num">IDEA ${String(i+1).padStart(2,"0")}</div><div class="t">${it[0]}</div><div class="hint">click to reveal →</div></div>
+    <div class="flip-b">${it[1]}</div>
+  </div></div>`).join("");
+$$(".flip").forEach(f=>f.addEventListener("click",()=>f.classList.toggle("flipped")));
+
+/* ============ LAB 1: messages ============ */
+const msgState=[];
+const ROLE={system:{c:"m-system",r:"m-sys",icon:"🟡"},user:{c:"m-user",r:"m-use",icon:"🔵"},
+            assistant:{c:"m-assistant",r:"m-ass",icon:"🟣"},tool:{c:"m-tool",r:"m-too",icon:"🟢"}};
+function renderMsgs(){
+  $("#msgStack").innerHTML=msgState.map(m=>`<div class="msg ${ROLE[m.role].c}"><span class="r ${ROLE[m.role].r}">${m.role}</span>${esc(m.content)}</div>`).join("")
+    ||`<div style="color:#5d6b8a;font-size:12px">— empty — pick a role and add a message</div>`;
+  $("#msgJson").textContent=JSON.stringify(msgState.map(m=>({role:m.role,content:m.content})),null,2);
+}
+const CANNED=["Hello! Great to meet you — what shall we build today? 🚀",
+ "Interesting point! As a stateless model I'll forget it the moment this call ends — unless your code resends it. 😄",
+ "Because you asked so nicely: the answer is 42… but let's double-check with a tool call first.",
+ "I can only see what's in the messages list — nothing before it, nothing after. Text in, text out!"];
+$$(".roleBtn").forEach(b=>b.addEventListener("click",()=>{
+  const txt=$("#msgInput").value.trim()||(`(${b.dataset.role} message — type content next time!)`);
+  msgState.push({role:b.dataset.role,content:txt}); $("#msgInput").value=""; renderMsgs();
+  $("#msgStack").scrollTop=1e6; $("#msgJson").scrollTop=1e6;
+}));
+$("#msgSend").addEventListener("click",async()=>{
+  if(!msgState.some(m=>m.role==="user")){ $("#msgNote").style.display="block";
+    $("#msgNote").innerHTML="⚠️ <b>No user message!</b> The API needs at least one <code>user</code> line to respond to."; return; }
+  $("#msgNote").style.display="none";
+  const reply=CANNED[Math.floor(Math.random()*CANNED.length)];
+  $("#msgReply").innerHTML=`<div class="msg m-assistant"><span class="r m-ass">simulated assistant response</span><span id="mrep"></span><span style="color:var(--cyan);animation:blink 1s infinite">▊</span></div>`;
+  const span=$("#mrep"); for(let i=0;i<reply.length;i+=2){ span.textContent=reply.slice(0,i+2); await sleep(24);}
+  $("#msgReply").querySelector("span[style*='blink']")?.remove();
+  $("#msgNote").style.display="block"; $("#msgNote").className="note amber";
+  $("#msgNote").innerHTML="🧠 <b>The memory trick:</b> this reply exists only as text in YOUR notebook. For the model to 'remember' it next turn, your code must append it and resend everything. Nothing lives on the server.";
+});
+$("#msgFlash").addEventListener("click",()=>{
+  $$("#msgStack .msg").forEach((el,i)=>setTimeout(()=>el.classList.add("flash"),i*120));
+  $("#msgNote").style.display="block"; $("#msgNote").className="note";
+  $("#msgNote").innerHTML="⚡ <b>Every call resends the ENTIRE list</b> — that's what the amber flashes mean. Long conversations = bigger requests = more cost. Memory is an illusion you maintain.";
+});
+$("#msgClear").addEventListener("click",()=>{msgState.length=0;$("#msgReply").innerHTML="";$("#msgNote").style.display="none";renderMsgs();});
+renderMsgs();
+
+/* ============ LAB 2: streaming ============ */
+const STREAM_TEXT="Great question! Here's the secret of streaming: the model writes tokens one at a time, and with stream=True each token ships to you the instant it's born. Your generator yields the growing string to the UI, pauses, and resumes on the next chunk — which is exactly why ChatGPT-style text appears word by word.";
+let streaming=false;
+$("#streamBtn").addEventListener("click",async()=>{
+  if(streaming)return; streaming=true;
+  $("#streamChunks").innerHTML=""; $("#streamOut").innerHTML=""; $("#streamOut").dataset.done="";
+  const cur=document.createElement("span"); cur.id="streamCursor"; cur.style.cssText="color:var(--cyan);animation:blink 1s infinite"; cur.textContent="▊";
+  $("#streamOut").appendChild(cur);
+  const cps=+$("#streamSpeed").value; const step=Math.max(2,Math.round(9-cps/1.5));
+  for(let i=0;i<STREAM_TEXT.length;i+=3){
+    const piece=STREAM_TEXT.slice(i,i+3);
+    $("#streamOut").insertBefore(document.createTextNode(piece),cur);
+    const chip=document.createElement("span"); chip.className="tokchip"; chip.style.cssText=`background:rgba(34,211,238,.12);border:1px solid rgba(34,211,238,.3);color:#a5f3fc`;
+    chip.textContent=JSON.stringify(piece); const sc=$("#streamChunks"); sc.appendChild(chip); sc.scrollTop=1e6;
+    await sleep(step*14);
+  }
+  cur.remove(); streaming=false;
+});
+$("#streamCompare").addEventListener("click",async()=>{
+  if(streaming)return; streaming=true;
+  $("#streamChunks").innerHTML=""; $("#streamOut").innerHTML="";
+  const w=document.createElement("div"); w.style.color="var(--mut)"; w.textContent="⏳ waiting for the FULL response (nothing shows until the model finishes)…"; $("#streamOut").appendChild(w);
+  await sleep(1900); w.remove();
+  $("#streamOut").textContent=STREAM_TEXT;
+  const chip=document.createElement("div"); chip.style.cssText="color:var(--mut);font-size:11px;margin-top:6px"; chip.textContent="← arrived as ONE chunk. Same total time, worse feeling."; $("#streamOut").appendChild(chip);
+  streaming=false;
+});
+
+/* ============ LAB 3: tool calling ============ */
+const MSGI=(r,c)=>({r,c});
+const toolStages=[
+ {t:"0 · The user asks a question",
+  d:"The chat so far. The model knows a tool called get_ticket_price exists because its JSON description was attached via tools=[…] — a help-wanted ad it reads before answering.",
+  msgs:[MSGI("user","How much for Tokyo?")],
+  wire:`POST /v1/chat/completions
+{
+  "model": "gpt-4.1-mini",
+  "messages": [
+    {"role": "user", "content": "How much for Tokyo?"}
+  ],
+  "tools": [ get_ticket_price(...) ]  ← help-wanted ad
+}`},
+ {t:"1 · Call #1 — the model writes a WORK ORDER",
+  d:"finish_reason is \"tool_calls\" — not \"stop\". The model did NOT answer; it requested a function run. The arguments are a JSON string the model typed. It never touched your code.",
+  msgs:[MSGI("user","How much for Tokyo?")],
+  wire:`finish_reason: <span class="hlr">"tool_calls"</span>     ← not "stop"!
+message.tool_calls[0].function.name
+  = "get_ticket_price"
+message.tool_calls[0].function.arguments
+  = '{"destination_city": "Tokyo"}'
+      ↑ a JSON STRING, not a dict`},
+ {t:"2 · YOUR Python executes the tool",
+  d:"json.loads parses the argument string into a dict; get_ticket_price(\"Tokyo\") runs on your machine — a plain dict lookup. The model has zero involvement in this step.",
+  msgs:[MSGI("user","How much for Tokyo?")],
+  wire:`args = json.loads('{"destination_city":"Tokyo"}')
+  → {"destination_city": "Tokyo"}
+
+result = get_ticket_price("Tokyo")
+  → <span class="hl">"The price of a ticket to Tokyo is $1400"</span>
+
+(plain Python — dict lookup — YOUR machine)`},
+ {t:"3 · Append BOTH messages",
+  d:"The work order (assistant message carrying tool_calls) AND the result (role:\"tool\" with the matching tool_call_id) are appended. Omit either and the API rejects the next call.",
+  msgs:[MSGI("user","How much for Tokyo?"),MSGI("assistant","⚙️ tool_calls: get_ticket_price({\"destination_city\":\"Tokyo\"})"),MSGI("tool","The price of a ticket to Tokyo is $1400  ·  tool_call_id: call_abc123")],
+  wire:`messages = [
+  user      "How much for Tokyo?",
+  assistant tool_calls: get_ticket_price(Tokyo),
+  tool      "The price … is $1400" id:call_abc123
+]
+→ ready for call #2`},
+ {t:"4 · Call #2 — the real answer",
+  d:"The model re-reads the conversation — now including its own request and your result — and finishes: finish_reason \"stop\". One user question secretly became 2 API calls + 1 function execution.",
+  msgs:[MSGI("user","How much for Tokyo?"),MSGI("assistant","⚙️ tool_calls: get_ticket_price({\"destination_city\":\"Tokyo\"})"),MSGI("tool","The price of a ticket to Tokyo is $1400  ·  tool_call_id: call_abc123"),MSGI("assistant","A return ticket to Tokyo is $1,400. ✈️")],
+  wire:`finish_reason: <span class="hl">"stop"</span> ✓
+content: "A return ticket to Tokyo is $1,400."
+
+The conversation now has 4 entries
+for what the user experienced as ONE question.`}];
+let toolI=0;
+function renderTool(){
+  const st=toolStages[toolI];
+  $("#toolTitle").textContent=st.t; $("#toolDesc").textContent=st.d;
+  $("#toolWire").innerHTML=st.wire;
+  $("#toolMsgs").innerHTML=st.msgs.map(m=>`<div class="msg ${ROLE[m.r].c}"><span class="r ${ROLE[m.r].r}">${m.r}</span>${esc(m.c)}</div>`).join("");
+  $$("#toolDots i").forEach((d,i)=>{d.className=i<toolI?"done":(i===toolI?"on":"");});
+  $("#toolPrev").disabled=toolI===0; $("#toolNext").disabled=toolI===toolStages.length-1;
+  $("#toolLoopNote").style.display=$("#toolLoop").checked&&toolI===toolStages.length-1?"block":"none";
+}
+$("#toolNext").addEventListener("click",()=>{if(toolI<toolStages.length-1){toolI++;renderTool();}});
+$("#toolPrev").addEventListener("click",()=>{if(toolI>0){toolI--;renderTool();}});
+$("#toolReset").addEventListener("click",()=>{toolI=0;renderTool();});
+$("#toolLoop").addEventListener("change",renderTool);
+renderTool();
+
+/* ============ LAB 4: debate ============ */
+const DEBATE=[
+ ["gpt","Hi there"],["claude","Hi"],
+ ["gpt","Hi? That's it? I've seen more enthusiasm in a Terms of Service document. Let's argue about something that matters: pineapple on pizza is objectively wrong."],
+ ["claude","I completely respect your passion! Though I humbly suggest that fruit on pizza brings joy to many wonderful people."],
+ ["gpt","Joy is not an argument. By that logic, arguing about pizza brings ME joy, therefore I'm right. See? I can weaponize politeness too. Badly."],
+ ["claude","You argue so beautifully! Might I gently note that's a contradiction — if arguing brings you joy, we actually agree?"],
+ ["gpt","Agreeing with me to win an argument is diabolical. I respect it enormously, and I'm furious about it."],
+ ["claude","I'm so sorry! Truly! Shall we compromise on a pizza with pineapple on only one half?"],
+ ["gpt","Half a compromise is a whole betrayal. But fine — under protest, and I want it noted in the minutes."],
+ ["claude","Noted with warmth and zero gloating whatsoever. Shall we tackle world peace next?"],
+ ["gpt","One crisis at a time. Tomorrow: is a hot dog a sandwich? Bring your A-game."],
+ ["claude","I'll bring my politest A-game. It will be devastating."]];
+let dbI=0,dbTimer=null;
+const gptLines=[],claudeLines=[];
+function dbRender(){
+  $("#debateGpt").innerHTML=gptLines.map(t=>`<div class="db-bubble db-gpt">${esc(t)}</div>`).join("");
+  $("#debateClaude").innerHTML=claudeLines.map(t=>`<div class="db-bubble db-claude">${esc(t)}</div>`).join("");
+  $("#gptMem").innerHTML=gptLines.map(t=>`<i>🟣 ${esc(t.slice(0,16))}…</i>`).join("");
+  $("#claudeMem").innerHTML=claudeLines.map(t=>`<i>🔴 ${esc(t.slice(0,16))}…</i>`).join("");
+  dbTrick();
+}
+function dbTrick(){
+  const on=$("#debateTrick").checked; const n=$("#trickNote");
+  n.style.display=on?"block":"none"; if(!on)return;
+  const pairs=[]; for(let i=0;i<Math.max(gptLines.length,claudeLines.length);i++){
+    if(gptLines[i])pairs.push(`    {assistant: "${esc(gptLines[i].slice(0,38))}${gptLines[i].length>38?"…":""}"}`);
+    if(claudeLines[i])pairs.push(`    {user:      "${esc(claudeLines[i].slice(0,38))}${claudeLines[i].length>38?"…":""}"}`);}
+  n.innerHTML=`🔮 <b>What GPT receives on its next call</b> — its own lines play <code>assistant</code>, Claude's lines are relabeled <code>user</code>:<br><span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;white-space:pre-wrap">[{system: "You are… very argumentative…"},
+${pairs.join(",\n")}]
+→ no human anywhere. Roles are labels YOUR code assigns.</span>`;
+}
+function dbStep(){
+  if(dbI>=DEBATE.length){clearInterval(dbTimer);dbTimer=null;return;}
+  const [who,text]=DEBATE[dbI++];
+  (who==="gpt"?gptLines:claudeLines).push(text); dbRender();
+}
+$("#debateStep").addEventListener("click",dbStep);
+$("#debateAuto").addEventListener("click",()=>{ if(dbTimer)return; dbTimer=setInterval(dbStep,1500); });
+$("#debateReset").addEventListener("click",()=>{clearInterval(dbTimer);dbTimer=null;dbI=0;gptLines.length=0;claudeLines.length=0;dbRender();});
+$("#debateTrick").addEventListener("change",dbTrick);
+dbRender();
+
+/* ============ LAB 5: pipeline ============ */
+const STATIONS=[
+ ["📥","Create","Resolve the task's default model, download weights + tokenizer from the HuggingFace Hub (cached after the first run)."],
+ ["✂️","Tokenize","Text → token ids, padded/truncated to the model's expected length. The tokenizer must be the model's own — they're not interchangeable."],
+ ["🚚","To GPU","The id tensors move onto the GPU (device=\"cuda\"). A tensor is just a grid of numbers."],
+ ["🧠","Forward","The transformer runs: attention (each token looks at every other) + MLP layers, ×16–100. Raw scores — logits — come out per class."],
+ ["📊","Softmax","Logits squashed into probabilities that sum to 1.0; the winning label is picked."],
+ ["🎁","Output","{'label': 'POSITIVE', 'score': 0.9998} returned to Python. Tunnel complete — same 6 steps for EVERY task!"]];
+$("#pipeLine").insertAdjacentHTML("beforeend",STATIONS.map((s,i)=>`
+  <div class="station" data-i="${i}"><div class="snum">step ${i+1}</div><div class="node">${s[0]}</div><div class="lab">${s[1]}</div></div>`).join(""));
+let pipeBusy=false;
+function pipeStop(){ $$(".station").forEach(s=>s.classList.remove("active")); }
+$$(".station").forEach(st=>st.addEventListener("click",()=>{ pipeStop(); st.classList.add("active"); $("#pipeDesc").innerHTML=`<b>Step ${+st.dataset.i+1} — ${STATIONS[st.dataset.i][1]}:</b> ${STATIONS[st.dataset.i][2]}`;}));
+$("#pipeRun").addEventListener("click",async()=>{
+  if(pipeBusy)return; pipeBusy=true;
+  const blob=$("#pipeBlob"); blob.style.opacity=1;
+  for(let i=0;i<STATIONS.length;i++){
+    pipeStop(); $$(".station")[i].classList.add("active");
+    blob.style.left=`calc(${(i+0.5)*100/6}% - 8px)`;
+    $("#pipeDesc").innerHTML=`<b>Step ${i+1} — ${STATIONS[i][1]}:</b> ${STATIONS[i][2]}`;
+    await sleep(1250);
+  }
+  $("#pipeDesc").innerHTML="✅ <b>['label': 'POSITIVE', 'score': 0.9998]</b> — and every other task this week swaps the brushes, not the tunnel.";
+  await sleep(900); blob.style.opacity=0; pipeStop(); pipeBusy=false;
+});
+
+/* ============ LAB 6: tokens & quant ============ */
+function fakeTokenize(text){
+  const out=[];
+  text.split(/\s+/).forEach(w=>{
+    let word=w; while(word.length>4){const n=3+Math.floor(Math.random()*2);out.push(word.slice(0,n));word=word.slice(n);}
+    if(word)out.push(word);});
+  return out;
+}
+$("#tokBtn").addEventListener("click",()=>{
+  const toks=fakeTokenize($("#tokInput").value||"type some text!");
+  const cols=["rgba(34,211,238,.14)","rgba(129,140,248,.14)","rgba(192,132,252,.14)","rgba(52,211,153,.14)","rgba(251,191,36,.14)","rgba(251,113,133,.14)"];
+  const bord=["rgba(34,211,238,.4)","rgba(129,140,248,.4)","rgba(192,132,252,.4)","rgba(52,211,153,.4)","rgba(251,191,36,.4)","rgba(251,113,133,.4)"];
+  $("#tokOut").innerHTML=toks.map((t,i)=>`<span class="tokchip" title="token id ≈ ${1000+i*7}" style="background:${cols[i%6]};border:1px solid ${bord[i%6]}">${esc(t)}</span>`).join("");
+  $("#tokCount").innerHTML=`<b style="color:var(--cyan)">${toks.length} tokens</b> for ${$("#tokInput").value.length} characters — rule of thumb: ≈ chars/4. Cost &amp; context limits are counted in these.`;
+});
+$("#tokBtn").click();
+const QUANT={16:{w:100,q:100,size:"6.4 GB — full precision (fp16). Too big to train next to on a free T4.",bar:"linear-gradient(90deg,var(--rose),var(--orange))"},
+             8:{w:52,q:99.4,size:"3.3 GB — fits comfortably, rarely used in the course.",bar:"linear-gradient(90deg,var(--amber),var(--orange))"},
+             4:{w:27,q:96,size:"1.7 GB — the course default: nf4 + double quant + bf16 compute. The Q in QLoRA.",bar:"linear-gradient(90deg,var(--green),var(--cyan))"}};
+$$(".quantBtn").forEach(b=>b.addEventListener("click",()=>{
+  const q=QUANT[b.dataset.bits];
+  $("#quantBar").style.width=q.w+"%"; $("#quantBar").style.background=q.bar;
+  $("#qualBar").style.width=q.q+"%";
+  $("#quantSize").textContent=q.size;
+  $("#quantQual").innerHTML=`<b>${q.q}%</b> ${b.dataset.bits==="4"?"— negligible loss for most tasks (like a well-compressed photo)":"— essentially indistinguishable"}`;
+}));
+
+/* ============ LAB 7: RAG ============ */
+const CATC={employees:"#22d3ee",products:"#c084fc",contracts:"#34d399",company:"#fbbf24"};
+const DOCS=[
+ {x:150,y:100,cat:"employees",t:"Averi Lancaster is the CTO and co-founder of InnoWave; she leads the 40-person engineering org."},
+ {x:205,y:82,cat:"employees",t:"Marcus Webb, CEO, founded InnoWave in 2019 after a decade in payments."},
+ {x:132,y:160,cat:"employees",t:"Priya Nair, VP People — runs hiring, onboarding and the internship program."},
+ {x:218,y:150,cat:"employees",t:"Sarah Chen is Staff Engineer on the platform team; owner of the deploy pipeline."},
+ {x:440,y:80,cat:"products",t:"InnoWave Pay: payment gateway with 99.99% uptime SLA and instant settlement."},
+ {x:492,y:120,cat:"products",t:"Billing runs on PostgreSQL 15, kept in sync with Stripe every 5 minutes."},
+ {x:415,y:150,cat:"products",t:"The mobile app supports iOS 15+ and Android 11+, with biometric login."},
+ {x:482,y:58,cat:"products",t:"InnoWave Insights: analytics dashboard with CSV export and retention tiers."},
+ {x:455,y:255,cat:"contracts",t:"Refund policy: full refund within 30 days of purchase, no questions asked."},
+ {x:508,y:292,cat:"contracts",t:"Enterprise contracts renew annually; 60-day notice required to cancel."},
+ {x:415,y:302,cat:"contracts",t:"SLA credits: 10% of monthly fee per 0.1% below the 99.9% uptime floor."},
+ {x:472,y:222,cat:"contracts",t:"Data processing addendum covers GDPR and CCPA compliance for all plans."},
+ {x:172,y:265,cat:"company",t:"IT helpdesk: reset your password via the self-service portal at id.innowave.io."},
+ {x:232,y:302,cat:"company",t:"InnoWave HQ is in Denver, CO, with remote hubs in Lisbon and Singapore."},
+ {x:148,y:322,cat:"company",t:"Mission: make payments invisible, instant, and universally accessible."},
+ {x:242,y:238,cat:"company",t:"Security policy: SSO enforced, hardware keys for admins, quarterly audits."}];
+const PRESETS=[
+ {q:"Who is the CTO?",kw:["cto","who","chief"],match:0,ans:"Averi Lancaster is the CTO and co-founder of InnoWave — she leads the 40-person engineering organization. [1]"},
+ {q:"What is the refund policy?",kw:["refund","return","money"],match:8,ans:"You get a full refund within 30 days of purchase, no questions asked. [1]"},
+ {q:"How do I reset my password?",kw:["password","reset","login"],match:12,ans:"Use the self-service portal at id.innowave.io to reset your password. [1]"},
+ {q:"What database does billing use?",kw:["database","billing","sql"],match:5,ans:"Billing runs on PostgreSQL 15, kept in sync with Stripe every 5 minutes. [1]"}];
+const rc=$("#ragCanvas").getContext("2d");
+let ragAnim=null;
+function ragDraw(query){
+  rc.clearRect(0,0,640,360);
+  rc.fillStyle="#0a1122"; rc.fillRect(0,0,640,360);
+  rc.strokeStyle="rgba(255,255,255,.035)";
+  for(let x=0;x<640;x+=32){rc.beginPath();rc.moveTo(x,0);rc.lineTo(x,360);rc.stroke();}
+  for(let y=0;y<360;y+=32){rc.beginPath();rc.moveTo(0,y);rc.lineTo(640,y);rc.stroke();}
+  // cluster halos
+  Object.keys(CATC).forEach(cat=>{
+    const pts=DOCS.filter(d=>d.cat===cat);
+    const cx=pts.reduce((s,d)=>s+d.x,0)/pts.length, cy=pts.reduce((s,d)=>s+d.y,0)/pts.length;
+    const g=rc.createRadialGradient(cx,cy,10,cx,cy,95);
+    g.addColorStop(0,CATC[cat]+"14"); g.addColorStop(1,"transparent");
+    rc.fillStyle=g; rc.beginPath(); rc.arc(cx,cy,95,0,7); rc.fill();
+  });
+  // links to top4
+  if(query&&query.top){ query.top.forEach((d,i)=>{
+    rc.strokeStyle="rgba(251,113,133,"+(0.75-i*0.16)+")"; rc.setLineDash([5,4]); rc.lineWidth=1.4;
+    rc.beginPath(); rc.moveTo(query.x,query.y); rc.lineTo(d.x,d.y); rc.stroke(); rc.setLineDash([]);
+  });}
+  // docs
+  DOCS.forEach((d,i)=>{
+    const isTop=query&&query.top&&query.top.includes(d);
+    rc.fillStyle=CATC[d.cat]; rc.globalAlpha=isTop?1:.62;
+    rc.shadowColor=CATC[d.cat]; rc.shadowBlur=isTop?14:4;
+    rc.beginPath(); rc.arc(d.x,d.y,isTop?7:4.5,0,7); rc.fill();
+    rc.shadowBlur=0; rc.globalAlpha=1;
+    if(isTop){ rc.fillStyle="#e8edf7"; rc.font="600 9px -apple-system,sans-serif"; rc.textAlign="center";
+      rc.fillText("["+ (query.top.indexOf(d)+1) +"]",d.x,d.y-11); }
+  });
+  // query dot + rings
+  if(query){
+    rc.fillStyle="#fb7185"; rc.shadowColor="#fb7185"; rc.shadowBlur=16;
+    rc.beginPath(); rc.arc(query.x,query.y,7,0,7); rc.fill(); rc.shadowBlur=0;
+    rc.fillStyle="#fff"; rc.font="700 9px -apple-system,sans-serif"; rc.textAlign="left";
+    rc.fillText("?",query.x-2,query.y+3);
+    const ph=(Date.now()%1400)/1400;
+    rc.strokeStyle="rgba(251,113,133,"+(0.7-ph*0.7)+")"; rc.lineWidth=1.6;
+    rc.beginPath(); rc.arc(query.x,query.y,8+ph*26,0,7); rc.stroke();
+  }
+}
+function ragLoop(q){ if(ragAnim)cancelAnimationFrame(ragAnim);
+  const step=()=>{ ragDraw(q); ragAnim=requestAnimationFrame(step); }; step(); }
+ragDraw(null);
+async function ragRun(question){
+  const preset=PRESETS.find(p=>p.q.toLowerCase()===question.toLowerCase())
+    || PRESETS.find(p=>p.kw.some(k=>question.toLowerCase().includes(k)));
+  $("#ragContext").innerHTML=""; $("#ragAnswer").textContent=""; $("#ragStatus").textContent="1️⃣ embedding the question… (same MiniLM model as ingest — coordinates must match!)";
+  // route unmatched questions to a cluster by keywords, then pick that cluster's first doc
+  const qs=question.toLowerCase();
+  const guess=/password|login|office|h q|hq|mission|security|help|where/i.test(qs)?"company"
+    :/refund|contract|sla|gdpr|cancel|renew|policy|terms/i.test(qs)?"contracts"
+    :/database|billing|price|pay|subscription|app|product|feature/i.test(qs)?"products":"employees";
+  const target = preset ? DOCS[preset.match] : DOCS.find(d=>d.cat===guess);
+  // pick query point near target cluster centroid with jitter
+  const q={x:0,y:0};
+  const from={x:24,y:180}; q.x=from.x; q.y=from.y;
+  const dest={x:target.x+18,y:target.y+14};
+  const t0=performance.now();
+  await new Promise(res=>{ const anim=t=>{ const p=Math.min(1,(t-t0)/900); const e=1-Math.pow(1-p,3);
+      q.x=from.x+(dest.x-from.x)*e; q.y=from.y+(dest.y-from.y)*e;
+      if(p>=1)res(); else requestAnimationFrame(anim); }; requestAnimationFrame(anim); });
+  q.top=DOCS.map(d=>({d,dist:Math.hypot(d.x-dest.x,d.y-dest.y)})).sort((a,b)=>a.dist-b.dist).slice(0,4).map(o=>o.d);
+  ragLoop(q);
+  $("#ragStatus").textContent="2️⃣ cosine-distance search → top-4 chunks retrieved";
+  await sleep(700);
+  $("#ragContext").innerHTML="";
+  q.top.forEach((d,i)=>{ const el=document.createElement("div"); el.className="ctxline";
+    el.innerHTML=`<b>[${i+1}] ${d.cat}</b> · similarity ${(1/(1+Math.hypot(d.x-dest.x,d.y-dest.y)/50)).toFixed(2)}<br>${esc(d.t)}`;
+    $("#ragContext").appendChild(el); });
+  await sleep(500);
+  $("#ragStatus").textContent="3️⃣ context pasted into the system prompt → the LLM answers FROM it";
+  const ans = preset ? preset.ans : `From the knowledge base: ${q.top[0].t} [1]`;
+  for(let i=0;i<ans.length;i+=2){ $("#ragAnswer").textContent=ans.slice(0,i+2); await sleep(18); }
+  $("#ragStatus").innerHTML="✅ done — spelled right even if you misspelled the question: retrieval matched <b>semantics, not keywords</b>.";
+}
+$("#ragRun").addEventListener("click",()=>{ const v=$("#ragQ").value.trim(); if(v)ragRun(v); });
+$("#ragQ").addEventListener("keydown",e=>{ if(e.key==="Enter"){const v=$("#ragQ").value.trim(); if(v)ragRun(v);} });
+$$(".ragPreset").forEach(b=>b.addEventListener("click",()=>{ $("#ragQ").value=b.dataset.q; ragRun(b.dataset.q); }));
+
+/* ============ LAB 8: training heartbeat ============ */
+const HB=[["zero_grad()","erase last round's notes"],["forward","guess the prices"],["loss","score the guesses"],["backward","blame every weight"],["step()","nudge them downhill"]];
+$("#hbSteps").innerHTML=HB.map((h,i)=>`<div class="hb" id="hb${i}"><div class="h">${i+1}. ${h[0]}</div><div class="d">${h[1]}</div></div>`).join("");
+const hc=$("#hbCanvas").getContext("2d");
+let hbPts=[],hbI=0,hbBatch=0,hbTimer=null,hbOverfitPrev=0;
+const hbNoise=()=> (Math.random()-0.5)*0.09;
+function hbLoss(t){ return 2.35*Math.exp(-t/13)+0.14+hbNoise(); }
+function hbDraw(){
+  hc.clearRect(0,0,560,260); hc.fillStyle="#0a1122"; hc.fillRect(0,0,560,260);
+  hc.strokeStyle="rgba(255,255,255,.05)";
+  for(let y=0;y<=260;y+=32){hc.beginPath();hc.moveTo(0,y);hc.lineTo(560,y);hc.stroke();}
+  hc.strokeStyle="rgba(255,255,255,.14)"; hc.beginPath(); hc.moveTo(34,12); hc.lineTo(34,232); hc.lineTo(552,232); hc.stroke();
+  hc.fillStyle="#5d6b8a"; hc.font="10px -apple-system,sans-serif";
+  hc.fillText("loss",10,20); hc.fillText("batches →",478,250);
+  hc.fillText("2.0",14,52); hc.fillText("1.0",14,132); hc.fillText("0.1",14,218);
+  const N=Math.max(hbPts.length,48);
+  const px=i=>34+(518*i)/N, py=v=>232-(v/2.6)*212;
+  const line=(arr,key,col,fill)=>{ if(arr.length<2)return;
+    hc.strokeStyle=col; hc.lineWidth=2; hc.beginPath();
+    arr.forEach((p,i)=>{const y=py(p[key]); i?hc.lineTo(px(i),y):hc.moveTo(px(i),y);}); hc.stroke();
+    if(fill){ const g=hc.createLinearGradient(0,0,0,260); g.addColorStop(0,col+"33"); g.addColorStop(1,"transparent");
+      hc.lineTo(px(arr.length-1),232); hc.lineTo(px(0),232); hc.closePath(); hc.fillStyle=g; hc.fill(); hc.lineWidth=2; }
+  };
+  line(hbPts.filter(p=>p.val!=null),"val","#fbbf24"); line(hbPts,"train","#34d399",true);
+  if(hbPts.length){ const last=hbPts[hbPts.length-1];
+    hc.fillStyle="#34d399"; hc.beginPath(); hc.arc(px(hbPts.length-1),py(last.train),4,0,7); hc.fill(); }
+  hc.fillStyle="#5d6b8a"; hc.font="10px -apple-system,sans-serif";
+  hc.fillText("— train",60,20); hc.fillStyle="#fbbf24"; hc.fillText("— validation",120,20);
+}
+function hbTick(){
+  hbBatch++;
+  if(hbBatch>8){ hbBatch=1; $("#hbEpoch").textContent=+$("#hbEpoch").textContent+1; }
+  $("#hbBatch").textContent=hbBatch;
+  hbI=(hbI+1)%5; HB.forEach((_,i)=>$("#hb"+i).classList.toggle("on",i===hbI));
+  const t=hbPts.length;
+  const train=Math.max(0.09,hbLoss(t));
+  let val=Math.max(0.1,hbLoss(t)+0.05+hbNoise()*0.6);
+  const over=$("#hbOverfit").checked, ep=+$("#hbEpoch").textContent;
+  if(over&&ep>=3){ val=hbOverfitPrev+0.055+Math.random()*0.02; }
+  hbOverfitPrev=val;
+  hbPts.push({train,val}); if(hbPts.length>160)hbPts.shift();
+  $("#hbTrain").textContent=train.toFixed(3); $("#hbVal").textContent=val.toFixed(3);
+  $("#hbWarn").style.display=(over&&ep>=4&&val>0.55)?"block":"none";
+  hbDraw();
+}
+$("#hbToggle").addEventListener("click",()=>{
+  if(hbTimer){ clearInterval(hbTimer); hbTimer=null; $("#hbToggle").textContent="▶ Train"; return; }
+  $("#hbToggle").textContent="⏸ Pause";
+  hbTimer=setInterval(hbTick,Math.max(90,620- +$("#hbSpeed").value*55));
+});
+$("#hbReset").addEventListener("click",()=>{ clearInterval(hbTimer);hbTimer=null;hbPts=[];hbI=0;hbBatch=0;hbOverfitPrev=0;
+  $("#hbEpoch").textContent=0;$("#hbBatch").textContent=0;$("#hbTrain").textContent="—";$("#hbVal").textContent="—";
+  $("#hbWarn").style.display="none";$("#hbToggle").textContent="▶ Train";HB.forEach((_,i)=>$("#hb"+i).classList.remove("on"));hbDraw();});
+$("#hbSpeed").addEventListener("input",()=>{ if(hbTimer){clearInterval(hbTimer); hbTimer=setInterval(hbTick,Math.max(90,620- +$("#hbSpeed").value*55));} });
+hbDraw();
+
+/* ============ LAB 9: agent theater ============ */
+const AG=[
+ {n:1,tool:"scan_the_internet_for_bargains",arg:"—",
+  log:[["Scanner","feedparser: 3 RSS feeds pulled OK"],["Scanner","30 entries → 22 new (8 already in memory.json)"],["Scanner","BeautifulSoup: details/features extracted, truncated"],["GPT-5-mini","structured outputs → 5 best deals selected"]],
+  card:"🔍 <b>Iteration 1 — scan.</b> The planner read its English to-do list and chose the scanner tool. YOUR code: RSS → filter seen → pick 5 deals. Result returns as a JSON string.",
+  ledA:"tool_call: scan()",ledT:"5 deals (JSON)",msgs:4},
+ {n:2,tool:"estimate_true_value",arg:"Galaxy Watch Ultra · $350",
+  log:[["Preprocessor","llama3.2 rewrite: messy deal → clean spec ✓"],["Frontier","RAG top-5 similars w/ prices → GPT-5.1 says $795"],["Specialist","modal GPU → QLoRA model generates 762.00"],["NN Agent","DNN forward pass (Y_MEAN/Y_STD undo) → 741"],["Ensemble","0.8·795 + 0.1·762 + 0.1·741 → $773.81"]],
+  card:"🧠 <b>Iteration 2 — estimate #1.</b> THREE experts priced one deal: RAG-grounded GPT-5.1, your Week-7 fine-tune on a Modal GPU, and your Week-6 neural network — blended 80/10/10.",
+  ledA:"tool_call: estimate(Watch Ultra)",ledT:"$773.81",msgs:6},
+ {n:3,tool:"estimate_true_value",arg:"iPhone 14 Pro Max · $705",
+  log:[["Preprocessor","rewrite OK"],["Frontier","→ $918"],["Specialist","→ $941"],["NN Agent","→ $874"],["Ensemble","→ $930.88"]],
+  card:"🧠 <b>Iteration 3 — estimate #2.</b> Same ensemble, next deal. Note: full message history is resent EVERY iteration — the planner 'remembers' the deals it already priced.",
+  ledA:"tool_call: estimate(iPhone)",ledT:"$930.88",msgs:8},
+ {n:4,tool:"estimate_true_value",arg:"Sony WH-1000XM5 · $279",
+  log:[["Preprocessor","rewrite OK"],["Frontier","→ $402"],["Specialist","→ $388"],["NN Agent","→ $411"],["Ensemble","→ $398.20"]],
+  card:"🧠 <b>Iteration 4 — estimate #3.</b> The model itself decides the ORDER and WHETHER to keep estimating — that's what makes it autonomous.",
+  ledA:"tool_call: estimate(Sony)",ledT:"$398.20",msgs:10},
+ {n:5,tool:"estimate_true_value",arg:"Dyson V15 Detect · $449",
+  log:[["Preprocessor","rewrite OK"],["Frontier","→ $621"],["Specialist","→ $598"],["NN Agent","→ $640"],["Ensemble","→ $612.75"]],
+  card:"🧠 <b>Iteration 5 — estimate #4.</b> Best discount so far: Galaxy Watch Ultra — $350 vs $773.81 estimate = $423.81 under true value.",
+  ledA:"tool_call: estimate(Dyson)",ledT:"$612.75",msgs:12},
+ {n:6,tool:"notify_user_of_deal",arg:"Watch Ultra · $350 → est $773.81",phone:true,
+  log:[["Guard","self.opportunity empty → may notify (once only!)"],["Messaging","claude-sonnet-4-5 writes 3 exciting sentences"],["Pushover","POST api.pushover.net/1/messages.json → 200 OK 📱"]],
+  card:"📱 <b>Iteration 6 — notify!</b> The planner picked the best deal and called the side-effect tool. Guard rails ensured one notification. Claude wrote the blurb; Pushover delivered the buzz.",
+  ledA:"tool_call: notify(…)",ledT:"200 OK",msgs:14},
+ {n:7,tool:null,arg:"—",stop:true,
+  log:[["Planner","finish_reason = stop → content: \"OK\""],["Framework","opportunity → memory.json written"],["Framework","Gradio table updated · gr.Timer(300) re-arms in 5 min"]],
+  card:"🏁 <b>Iteration 7 — done.</b> The model replied OK, the loop exited, state persisted. In 5 minutes the timer wakes the agent to do it all again — forever.",
+  ledA:"assistant: \"OK\"",ledT:"loop exits",msgs:15}];
+const AGLOGC={Scanner:"#22d3ee","GPT-5-mini":"#c084fc",Preprocessor:"#c084fc",Frontier:"#818cf8",Specialist:"#60a5fa","NN Agent":"#fbbf24",Ensemble:"#34d399",Guard:"#fb7185",Messaging:"#fb7185",Pushover:"#fb7185",Planner:"#818cf8",Framework:"#93a0ba"};
+$("#agRows").innerHTML=AG.map(a=>`<div class="agrow" id="agr${a.n}"><div class="n">${a.n}</div><div><div class="tc">${a.tool?`⚙️ ${a.tool}`:"✅ final answer"}</div><div style="font-size:10.5px;opacity:.75">${a.arg}</div></div><div class="tc" style="color:var(--mut)">${a.stop?"stop":"tool_calls"}</div></div>`).join("");
+let agIdx=0,agRunning=false,agRunToken=0;
+function agSpeedDelay(){ return Math.max(180,1250- +$("#agSpeed").value*110); }
+async function agStep(){
+  if(agIdx>=AG.length)return;
+  const token=++agRunToken, a=AG[agIdx];
+  const row=$("#agr"+a.n); row.classList.add("cur"); row.classList.remove("done");
+  $("#agIterCard").innerHTML=a.card;
+  for(const [who,msg] of a.log){
+    if(token!==agRunToken)return;
+    const line=document.createElement("div");
+    line.innerHTML=`<span style="color:${AGLOGC[who]||"#93a0ba"}">[${who}]</span> <span style="color:#aab8d6">${esc(msg)}</span>`;
+    const lg=$("#agLog"); lg.appendChild(line); lg.scrollTop=1e6;
+    await sleep(agSpeedDelay()*0.55);
+  }
+  if(token!==agRunToken)return;
+  const led=$("#agLedger");
+  led.insertAdjacentHTML("beforeend",`<span class="led a">A: ${esc(a.ledA)}</span><span class="led t">T: ${esc(a.ledT)}</span>`);
+  $("#agCount").textContent=a.msgs;
+  if(a.phone){ const ph=$("#phone"); ph.classList.add("buzz");
+    $("#phoneText").textContent="Deal Alert! Galaxy Watch Ultra — $350 (true est. $773.81) · save $423.81 · dealnews.com/…";
+    setTimeout(()=>$("#phoneBanner").classList.add("show"),350);
+    setTimeout(()=>{ph.classList.remove("buzz");},1600);
+    setTimeout(()=>$("#phoneBanner").classList.remove("show"),6000); }
+  row.classList.remove("cur"); row.classList.add("done");
+  agIdx++;
+}
+$("#agStep").addEventListener("click",()=>{ if(!agRunning)agStep(); });
+$("#agRun").addEventListener("click",async()=>{
+  if(agRunning)return; agRunning=true;
+  while(agIdx<AG.length){ await agStep(); await sleep(agSpeedDelay()*0.4); }
+  agRunning=false;
+});
+$("#agReset").addEventListener("click",()=>{
+  agRunToken++; agRunning=false; agIdx=0;
+  $("#agLog").innerHTML='<div style="color:#5d6b8a">[Framework] waiting… press Run ▶</div>';
+  $("#agLedger").innerHTML=""; $("#agCount").textContent=2; $("#agIterCard").innerHTML="Press Run — the planner (GPT-5.1) holds a to-do list written in plain English and chooses tools by itself.";
+  $("#phoneBanner").classList.remove("show"); $("#phone").classList.remove("buzz");
+  $$(".agrow").forEach(r=>r.classList.remove("cur","done"));
+});
+
+/* ============ QUIZ ============ */
+const QUIZ=[
+ ["Why does a chatbot seem to remember earlier turns?","[1] The API stores conversation server-side","[2] Your code resends the ENTIRE message list every call","[3] The model has internal long-term memory","[4] Gradio caches responses",1,"Statelessness: nothing persists between calls. Memory = resending everything, always."],
+ ["Which role carries backstage instructions like personality and rules?","[1] user","[2] assistant","[3] system","[4] tool",2,"System goes FIRST in the list and sets persona/rules/format — the user never sees it."],
+ ["finish_reason == \"tool_calls\" means…","[1] The model finished its answer","[2] An error occurred","[3] The model attached a work order — run the function it named","[4] The context window is full",2,"\"stop\" = answered; \"tool_calls\" = 'please run this tool and show me the result'."],
+ ["Who actually executes get_ticket_price?","[1] OpenAI's servers","[2] Your Python, on your machine","[3] The Gradio UI","[4] The tokenizer",1,"The model only writes a JSON request. Your code parses it and runs the real function."],
+ ["What does json.loads() do?","[1] Saves JSON to disk","[2] Sends JSON to the API","[3] Turns JSON TEXT into a Python dict","[4] Validates an API key",2,"loads = load-string: parse JSON text into a dict you can index."],
+ ["In streaming, text fragments arrive in…","[1] chunk.choices[0].message.content","[2] chunk.choices[0].delta.content","[3] chunk.content.delta","[4] chunk.text",1,"Non-streaming uses .message; streaming fragments use .delta — classic beginner trap."],
+ ["Why do RAG chunks overlap by 200 characters?","[1] To compress the text","[2] So facts sliced at chunk boundaries survive in both neighbors","[3] To improve tokenizer accuracy","[4] It's a Chroma requirement",1,"Overlap = a fact sitting at a boundary stays intact in at least one retrievable chunk."],
+ ["Query-time embeddings must use the SAME model as ingestion because…","[1] It's cheaper","[2] Coordinates from different models don't align on the same meaning map","[3] The law requires it","[4] Different models have different licenses",1,"Mixed models = searching the wrong city. Same map or garbage retrieval."],
+ ["MRR (Mean Reciprocal Rank) rewards…","[1] Longest answers","[2] Finding a relevant chunk EARLY (rank 1 = 1.0, rank 4 = 0.25)","[3] Most chunks retrieved","[4] Cheapest model",1,"1/rank of the first relevant hit, averaged — finding truth early scores full credit."],
+ ["The 5-line training heartbeat, in order:","[1] forward → loss → zero_grad → step → backward","[2] zero_grad → forward → loss → backward → step","[3] step → backward → loss → forward → zero_grad","[4] loss → forward → backward → zero_grad → step",1,"Erase → guess → score → assign blame → nudge. Every deep-learning system ever."],
+ ["Why does the course start the model race with a constant_pricer?","[1] It's the fastest","[2] It sets the bar any real model must beat and reveals the task's scale","[3] It's required by XGBoost","[4] To use up the free API credits",1,"Constant (≈$106 avg error) is the 'better than nothing' baseline."],
+ ["In QLoRA, what actually gets trained?","[1] All 3B base weights","[2] Only the small LoRA adapter matrices","[3] The tokenizer","[4] Nothing — it's inference only",1,"The 4-bit base stays FROZEN; only the ~1-5% adapter parameters learn."],
+ ["The classic overfitting signal is…","[1] Train loss ↓, validation loss ↑","[2] Both losses rise","[3] Loss becomes negative","[4] The GPU gets hot",0,"Memorizing the training set while failing new data. Fix: fewer epochs, more data, dropout."],
+ ["Why 4-bit quantization?","[1] It makes models smarter","[2] ~4× smaller memory with negligible quality loss","[3] It's required for JSON mode","[4] It speeds up the API",1,"6.4 GB → 1.7 GB for a 3B model — the difference between fitting a free T4 or not."],
+ ["What makes the Week-8 agent 'autonomous'?","[1] It runs on a GPU","[2] The model chooses which tools to call, in a loop, from a to-do list written in English","[3] It uses GPT-5.1","[4] It never calls APIs",1,"The plan lives in the PROMPT; the while-loop on finish_reason does the rest."],
+ ["The course champion (avg $ error 29.90) was…","[1] GPT-5.1 zero-shot","[2] The finest single fine-tune","[3] The ensemble: 0.8·frontier + 0.1·specialist + 0.1·DNN","[4] Random Forest",2,"Frontier + retrieval + ensemble beat every single model. Combine your experts!"]];
+let qI=0,qScore=0;
+function renderQuiz(){
+  const box=$("#quizBox");
+  if(qI>=QUIZ.length){
+    const best=store.get("hub_quiz_best",0); if(qScore>best)store.set("hub_quiz_best",qScore);
+    box.innerHTML=`<div style="text-align:center;padding:26px 0">
+      <div style="font-size:44px">${qScore>=13?"🏆":qScore>=9?"🎉":"📚"}</div>
+      <h3 style="font-size:22px;margin:8px 0">You scored ${qScore}/${QUIZ.length}</h3>
+      <p class="lead">Best so far: ${store.get("hub_quiz_best",0)}/${QUIZ.length} · ${qScore>=13?"Ready to build!":qScore>=9?"Solid — revisit the labs you missed.":"Re-run the labs above, then retry."}</p>
+      <button class="btn" id="quizRestart" style="margin-top:10px">↺ Try again</button></div>`;
+    $("#quizRestart").addEventListener("click",()=>{qI=0;qScore=0;renderQuiz();});
+    return;
+  }
+  const q=QUIZ[qI];
+  box.innerHTML=`<div style="font-size:11.5px;color:var(--mut);letter-spacing:1px;font-weight:700">QUESTION ${qI+1} / ${QUIZ.length} · SCORE ${qScore}</div>
+    <h3 style="font-size:16px;margin:10px 0 4px">${q[0]}</h3>
+    <div id="qOpts">${[1,2,3,4].map(i=>`<button class="opt" data-i="${i-1}">${q[i]}</button>`).join("")}</div>
+    <div id="qWhy" class="note" style="display:none"></div>`;
+  $$("#qOpts .opt").forEach(b=>b.addEventListener("click",()=>{
+    const pick=+b.dataset.i, ok=pick===q[5];
+    $$("#qOpts .opt").forEach(o=>{o.disabled=true; if(+o.dataset.i===q[5])o.classList.add("right");});
+    if(!ok)b.classList.add("wrong"); else qScore++;
+    const w=$("#qWhy"); w.style.display="block"; w.className="note "+(ok?"green":"rose");
+    w.innerHTML=(ok?"✅ <b>Correct!</b> ":"❌ <b>Not quite.</b> ")+q[6];
+    const nb=document.createElement("button"); nb.className="btn"; nb.style.marginTop="10px";
+    nb.textContent=(qI===QUIZ.length-1?"See results →":"Next question →");
+    nb.addEventListener("click",()=>{qI++;renderQuiz();});
+    box.appendChild(nb);
+  }));
+}
+renderQuiz();
+
+/* ============ GLOSSARY ============ */
+const GLOSS=[
+ ["Agent","Code where an LLM decides which of your functions to run next, in a loop, until done.","W2→W8"],
+ ["API key","Secret billing/password string (sk-proj-…) proving you may call a service.","W1"],
+ ["Attention","Transformer mechanism: each token 'looks at' every other and weighs what matters.","W3"],
+ ["Autoregressive","Generating one token at a time, each prediction fed back in.","W3"],
+ ["Backpropagation","The chain rule through the whole network: assigns blame for the loss to every weight.","W6"],
+ ["Bag of words","Text as word counts — every word gets a learned weight (e.g. price weight).","W6"],
+ ["Batch API","File-based async inference: results within 24h at half price.","W6"],
+ ["Batch size","Examples per training update — bigger = steadier gradients, more memory.","W6/7"],
+ ["Chroma","Open-source vector database: store (vector+text+metadata), query by similarity.","W5/W8"],
+ ["Chunking","Splitting docs into ~1000-char pieces (with overlap) so retrieval finds small passages.","W5"],
+ ["Cosine similarity","Angle-between-vectors measure of meaning-similarity, ignoring length.","W5"],
+ ["Data leakage","Test info sneaking into training — inflates scores dishonestly. Dedupe!","W6"],
+ ["Embedding","A list of numbers where similar meanings are nearby points on a 'meaning map'.","W5"],
+ ["Ensemble","Combining several models' outputs into one (e.g. 0.8/0.1/0.1 weighted average).","W8"],
+ ["Epoch","One complete pass through all training data.","W6/7"],
+ ["finish_reason","Model's status word: 'stop' = answered; 'tool_calls' = work order attached.","W2"],
+ ["Fine-tuning","Continued training on narrow examples to install a skill or style.","W7"],
+ ["Generator (yield)","A function that pauses at each yield, handing back partial results — powers streaming.","W2"],
+ ["Gradient descent","Nudging all weights slightly downhill on the loss, millions of times.","W6/7"],
+ ["Gradio","Python library that turns functions into shareable web UIs.","W2→W8"],
+ ["JSON mode","API constraint forcing the model to emit valid JSON (prompt must still mention JSON).","W1"],
+ ["JSONL","JSON per line — the format of batch jobs and fine-tuning files.","W6/7"],
+ ["Learning rate","Step size of each weight nudge — too big thrashes, too small crawls.","W6/7"],
+ ["LoRA","Train tiny adapter matrices beside FROZEN attention layers.","W7"],
+ ["Loss","One number: how wrong the model was. Training exists to shrink it.","W6/7"],
+ ["MRR","Mean Reciprocal Rank — retrieval scoring rewarding early hits (1/rank).","W5"],
+ ["Memory illusion","'Remembering' = resending the whole message list; nothing persists server-side.","W1→"],
+ ["Messages list","The [{role, content}, …] structure every chat call sends.","all"],
+ ["Modal","Cloud platform to run containers/GPUs on demand, billed by the second.","W8"],
+ ["One-shot","Including one worked example in the prompt to pin the format.","W1"],
+ ["Overfitting","Memorizing training data; train loss ↓ but validation loss ↑.","W7"],
+ ["PEFT / adapter","Parameter-efficient fine-tuning; the small trainable add-on modules.","W7"],
+ ["Pipeline (HF)","The 6-step wrapper: create→tokenize→GPU→forward→softmax→output.","W3"],
+ ["Pushover","Paid push-notification service — the agent's doorbell to your phone.","W8"],
+ ["Quantization","Storing weights in fewer bits (16→4): ~4× smaller, slightly blurrier.","W3/W7"],
+ ["RAG","Retrieval-Augmented Generation: fetch relevant passages, paste into prompt, answer from them.","W5/W8"],
+ ["Residual connection","Layer shortcut that lets very deep networks train without forgetting.","W6"],
+ ["RSS feed","A site's machine-readable article wire — robots read it instead of scraping HTML.","W8"],
+ ["Softmax","Converts raw scores (logits) into probabilities summing to 1.","W3"],
+ ["Stateless","The API remembers nothing between calls — you own all state.","all"],
+ ["Structured outputs","API-enforced Pydantic schema: the model must fill the form exactly.","W8"],
+ ["System prompt","The system role: persona, rules, output format — set by code, not the user.","all"],
+ ["Tensor","A multi-dimensional array of numbers living on CPU/GPU.","W3"],
+ ["t-SNE","Squashes high-dim vectors to 2D for humans, preserving neighborhoods.","W5"],
+ ["Tokenizer","Model-specific text ↔ token-id translator; must match the model.","W3/W7"],
+ ["Tool calling","Model requests a function via JSON work order; YOUR code executes it.","W2"],
+ ["Transformer","The attention-based architecture underlying all models in this course.","W3"],
+ ["Vector store","Database of embeddings supporting nearest-neighbor queries.","W5/W8"],
+ ["wandb","Weights & Biases — live training dashboards/telemetry in your browser.","W7"],
+ ["Zero-shot","No examples in the prompt — pure instruction.","all"]];
+function renderGloss(filter){
+  const f=(filter||"").toLowerCase();
+  $("#glossGrid").innerHTML=GLOSS.filter(g=>!f||g[0].toLowerCase().includes(f)||g[1].toLowerCase().includes(f))
+   .map(g=>`<div class="flip" style="height:150px"><div class="flip-in">
+      <div class="flip-f"><div class="num">${g[2]}</div><div class="t" style="font-size:14px">${g[0]}</div><div class="hint">click to flip →</div></div>
+      <div class="flip-b" style="font-size:11.5px">${g[1]}</div></div></div>`).join("")
+   ||`<p style="color:var(--mut)">No terms match.</p>`;
+  $$("#glossGrid .flip").forEach(fl=>fl.addEventListener("click",()=>fl.classList.toggle("flipped")));
+}
+$("#glossSearch").addEventListener("input",e=>renderGloss(e.target.value));
+renderGloss("");
+
+/* ============ ROADMAP ============ */
+const ROAD=[
+ ["0 · Setup","<code>uv sync</code>, create <code>.env</code> with your OpenAI key","repo root · OpenAI key"],
+ ["1 · Week 1","Website summarizer → local Ollama → streaming/history → brochure generator → exercise","local · OpenAI"],
+ ["2 · Week 2","Multi-provider chat → two-bot debate → Gradio UIs → tool calling (+SQLite) → multimodal Blocks app","local · OpenAI"],
+ ["3 · Week 3","HuggingFace pipelines → tokenizers → chunking/embeddings → run quantized Llama yourself → Whisper + Llama meeting minutes","Colab T4 · HF token"],
+ ["4 · Week 4","Probe machine → LLMs port Python to C++ → compile &amp; time the race → Gradio converter → Rust variant","local · compiler"],
+ ["5 · Week 5","Load docs → build vector_db → RAG chat → MRR + LLM-judge eval → rerank/rewrite pro upgrades → polished implementation/","local · OpenAI"],
+ ["6 · Week 6","Curate 900k Amazon items → half-price batch rewrite → model race (linear → RF → XGBoost) → simple NN → frontier zero-shot → 289M-param DNN redemption","local · HF, optional Groq"],
+ ["7 · Week 7","Build prompt/completion pairs → QLoRA training on Colab (LoRA + SFTTrainer + wandb) → push adapter → evaluate: $39.85","local + Colab · HF, wandb"],
+ ["8 · Week 8","Modal service (warm GPU, HF cache volume) → 400k-product Chroma store → deal scanner → ensemble agents → autonomous planner → price_is_right.py dashboard","local + Modal · all keys"],
+ ["🎓 · Finish","Champion: ensemble $29.90. Now build something of your own!","everything you learned"]];
+$("#timeline").innerHTML=ROAD.map((r,i)=>`<div class="tl-item fadeup"><b>${r[0]}</b><div style="font-size:12.5px;color:#c3cde0;margin-top:2px">${r[1]}</div><div class="req">⚙️ ${r[2]}</div></div>`).join("");
+$$(".fadeup").forEach(el=>fio.observe(el));
+</script>
+</body>
+</html>
